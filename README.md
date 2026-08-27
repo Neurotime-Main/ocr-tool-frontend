@@ -17,11 +17,25 @@ Set `VITE_API_URL` to the public backend API URL, including `/api` and without a
 ## Deploy to Vercel
 
 1. Push this `frontend` directory as its own Git repository.
-2. Import it in Vercel. Vercel detects Vite; `vercel.json` also declares the build and output settings.
-3. Add `VITE_API_URL=https://YOUR-RENDER-SERVICE.onrender.com/api` to Production and Preview environments.
-4. Deploy, then add the resulting Vercel origin to the backend's `CLIENT_ORIGIN` value.
+2. Import it in Vercel. Vercel detects Vite; `vercel.json` also declares the build, output directory, the SPA rewrite, and immutable caching for hashed assets.
+3. Add the environment variable below to **Production, Preview, and Development**.
+4. Deploy, then add the resulting Vercel origins to the backend's `CLIENT_ORIGIN` and redeploy the API.
 
-Vite injects `VITE_*` variables during the build, so redeploy after changing the API URL.
+| Variable | Value |
+| --- | --- |
+| `VITE_API_URL` | `https://YOUR-RENDER-SERVICE.onrender.com/api` |
+
+Include `/api`, and no trailing slash.
+
+Vite inlines `VITE_*` at build time, so a changed API URL needs a **redeploy**, not a restart. A Vercel environment variable overrides a committed `.env`, and `.env` is git-ignored here anyway — copy `.env.example` for local work.
+
+Preview deployments get a new hostname per branch. Give the backend a wildcard so they are not blocked by CORS:
+
+```
+CLIENT_ORIGIN=https://markwise.vercel.app,https://markwise-*.vercel.app
+```
+
+If a request fails with a CORS error in the browser, the API returned `403` because the origin was not in that list.
 
 ## Commands
 
