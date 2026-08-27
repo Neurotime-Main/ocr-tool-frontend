@@ -390,7 +390,11 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .processing-files { width: min(640px, calc(100vw - 32px)); max-height: min(46vh, 440px); overflow: auto; padding: 7px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.72); box-shadow: var(--shadow); }
 .processing-file { min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-bottom: 1px solid #e6e9e3; color: #687068; }
 .processing-file:last-child { border-bottom: 0; }
-.processing-file > span { min-width: 0; flex: 1; overflow: hidden; color: #303832; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.processing-file > span { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.processing-file > span b { overflow: hidden; color: #303832; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+/* Why a document failed. Without it a failed row reads only "Failed", and the
+   reason the server already recorded never reaches the person who has to act. */
+.processing-file > span em { overflow: hidden; color: #a43d3d; font-size: 10px; font-style: normal; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .processing-file small { flex: none; padding: 5px 8px; border-radius: 99px; background: #edf0eb; color: #747b74; font-size: 10px; font-weight: 700; }
 .processing-file small.complete { color: var(--green); background: var(--green-soft); }
 .processing-file small.failed { color: #a43d3d; background: #f9e8e8; }
@@ -433,7 +437,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .document-switcher select { height: 40px; font-size: 11px; }
   .document-switcher > span { display: none; }
   .processing-files { max-height: 50vh; }
-  .processing-file > span { font-size: 11px; }
+  .processing-file > span b { font-size: 11px; }
   .processing-file small { font-size: 9px; }
   .excel-button, .export-button { width: 34px; height: 34px; min-height: 34px; margin-left: 3px; }
 }

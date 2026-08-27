@@ -187,7 +187,12 @@ function ProcessingScreen({ documents, stopping, onRetry, onDiscard }: {
         {documents.map((document) => (
           <div className="processing-file" key={document.id}>
             <FileSearch size={17} />
-            <span title={document.originalName}>{document.originalName}</span>
+            <span>
+              <b title={document.originalName}>{document.originalName}</b>
+              {document.ocrStatus === 'FAILED' && document.ocrError && (
+                <em title={document.ocrError}>{document.ocrError}</em>
+              )}
+            </span>
             <small className={document.ocrStatus.toLowerCase()}>
               {document.ocrStatus === 'COMPLETE' ? `${document.pageCount ?? 0} pages`
                 : document.ocrStatus === 'FAILED' ? 'Failed'
