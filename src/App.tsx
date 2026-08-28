@@ -147,7 +147,7 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
         {error && <div className="inline-error">{error}</div>}
         {notice && !error && <div className="inline-notice">{notice}</div>}
       </section>
-      <footer className="welcome-footer">Files are processed with Tesseract on your server.</footer>
+      <footer className="welcome-footer">Files are processed with PaddleOCR on your server.</footer>
     </main>
   );
 }
