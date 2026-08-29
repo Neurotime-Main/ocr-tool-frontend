@@ -7,24 +7,24 @@ export const api = axios.create({ baseURL });
 
 export const fileUrl = (documentId: string) => `${baseURL}/documents/${documentId}/file`;
 
-export async function uploadDocument(file: File, language = 'eng', ocrMode = 'AUTO') {
+export async function uploadDocument(file: File, languages = ['eng'], ocrMode = 'AUTO') {
   const body = new FormData();
   body.append('file', file);
-  body.append('language', language);
+  body.append('language', languages.join('+'));
   body.append('ocrMode', ocrMode);
   return (await api.post<DocumentRecord>('/documents', body)).data;
 }
 
 export async function uploadDocuments(
   files: File[],
-  language = 'eng',
+  languages = ['eng'],
   ocrMode = 'AUTO',
   onProgress?: (loaded: number, total: number) => void,
   signal?: AbortSignal,
 ) {
   const body = new FormData();
   files.forEach((file) => body.append('files', file));
-  body.append('language', language);
+  body.append('language', languages.join('+'));
   body.append('ocrMode', ocrMode);
   return (await api.post<{ documents: DocumentRecord[] }>('/documents/batch', body, {
     signal,

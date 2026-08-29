@@ -37,11 +37,28 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .upload-icon { margin: 0 auto 14px; width: 52px; height: 52px; display: grid; place-items: center; background: var(--green-soft); color: var(--green); border-radius: 15px; }
 .upload-card h2 { font-size: 19px; margin: 0 0 5px; }
 .upload-card > p { margin: 0 0 20px; color: #82877f; font-size: 13px; }
-.upload-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin: 0 0 18px; text-align: left; }
-.upload-options label { display: flex; flex-direction: column; gap: 6px; }
-.upload-options label span { color: #737a72; font-size: 9px; font-weight: 700; letter-spacing: .65px; text-transform: uppercase; }
-.upload-options select { width: 100%; border: 1px solid #d4d9d1; border-radius: 8px; background: #fafbf8; color: #354039; padding: 9px 10px; outline: none; font-size: 11px; }
-.upload-options select:focus { border-color: #6d907b; box-shadow: 0 0 0 3px #e7efe9; }
+.upload-options { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; margin: 0 0 24px; text-align: left; }
+.upload-option-group { min-width: 0; padding: 14px; border: 1px solid #dce3da; border-radius: 14px; background: linear-gradient(145deg, #fcfdfb, #f4f7f3); }
+.option-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 11px; }
+.option-heading > span { color: #354039; font-size: 12px; font-weight: 700; }
+.option-heading small { color: #858d84; font-size: 10px; }
+.language-choices, .ocr-mode-choices { display: grid; gap: 7px; }
+.language-choice, .ocr-mode-choice { width: 100%; border: 1px solid #d7ded5; background: #fff; color: #576057; cursor: pointer; text-align: left; }
+.language-choice { min-height: 35px; display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 9px; font-size: 12px; font-weight: 600; }
+.choice-check, .mode-choice-mark { display: grid; flex: none; place-items: center; color: transparent; border: 1.5px solid #b8c2b7; background: #fff; }
+.choice-check { width: 17px; height: 17px; border-radius: 5px; }
+.language-choice:hover:not(:disabled), .ocr-mode-choice:hover:not(:disabled) { border-color: #9bb5a2; background: #f8fbf8; }
+.language-choice.selected { border-color: #a4c5ad; background: #eaf4ec; color: #24563f; }
+.language-choice.selected .choice-check { border-color: #24563f; background: #24563f; color: #fff; }
+.ocr-mode-choice { min-height: 46px; display: flex; align-items: flex-start; gap: 8px; padding: 8px 9px; border-radius: 9px; }
+.mode-choice-mark { width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; }
+.ocr-mode-choice > span:last-child { display: flex; min-width: 0; flex-direction: column; gap: 1px; }
+.ocr-mode-choice b { color: #465047; font-size: 11px; }
+.ocr-mode-choice small { color: #7c847a; font-size: 9px; line-height: 1.35; }
+.ocr-mode-choice.selected { border-color: #a4c5ad; background: #eaf4ec; }
+.ocr-mode-choice.selected b { color: #24563f; }
+.ocr-mode-choice.selected .mode-choice-mark { border-color: #24563f; background: #24563f; color: #fff; }
+.language-choice:disabled, .ocr-mode-choice:disabled { cursor: wait; opacity: .58; }
 .primary-button, .export-button { border: 0; border-radius: 9px; background: var(--green); color: #fff; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
 .primary-button { padding: 11px 18px; box-shadow: 0 5px 12px rgba(36, 86, 63, .16); }
 .primary-button:hover:not(:disabled), .export-button:hover:not(:disabled), .find-button:hover:not(:disabled) { background: #1d4935; transform: translateY(-1px); }
@@ -287,9 +304,13 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .upload-icon { width: 64px; height: 64px; margin-bottom: 17px; border-radius: 18px; }
 .upload-card h2 { margin-bottom: 7px; font-size: 23px; }
 .upload-card > p { margin-bottom: 26px; font-size: 14px; }
-.upload-options { gap: 14px; margin-bottom: 24px; }
-.upload-options label span { font-size: 11px; letter-spacing: 0; text-transform: none; }
-.upload-options select { min-height: 44px; padding: 9px 12px; border-radius: 10px; font-size: 13px; }
+.upload-options { gap: 16px; margin-bottom: 24px; }
+.upload-option-group { padding: 16px; border-radius: 16px; }
+.option-heading > span { font-size: 13px; }
+.language-choice { min-height: 39px; font-size: 13px; }
+.ocr-mode-choice { min-height: 52px; padding: 10px; }
+.ocr-mode-choice b { font-size: 12px; }
+.ocr-mode-choice small { font-size: 10px; }
 .primary-button { min-height: 48px; padding: 12px 24px; font-size: 14px; }
 .upload-meta { margin-top: 25px; }
 

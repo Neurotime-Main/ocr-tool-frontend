@@ -14,6 +14,12 @@ import type { DocumentRecord, Highlight } from './types';
 import { useHighlightHistory } from './useHighlightHistory';
 
 const MAX_BATCH_FILES = 30;
+const OCR_LANGUAGES = [
+  { value: 'aze', label: 'Azərbaycanca' },
+  { value: 'eng', label: 'English' },
+  { value: 'rus', label: 'Русский' },
+] as const;
+type OcrLanguage = typeof OCR_LANGUAGES[number]['value'];
 
 const formatBytes = (bytes: number) => bytes < 1024 * 1024
   ? `${Math.round(bytes / 1024)} KB`
@@ -54,8 +60,19 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
   const [uploadProgress, setUploadProgress] = useState<{ loaded: number; total: number } | null>(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const [language, setLanguage] = useState('aze+eng');
+  const [languages, setLanguages] = useState<OcrLanguage[]>(['aze', 'eng']);
   const [ocrMode, setOcrMode] = useState('AUTO');
+
+  const toggleLanguage = (language: OcrLanguage) => {
+    setLanguages((current) => {
+      if (current.includes(language)) {
+        // Keep at least one recognizer selected; an empty choice can never be
+        // useful and otherwise only becomes a server-side upload error.
+        return current.length === 1 ? current : current.filter((item) => item !== language);
+      }
+      return [...current, language];
+    });
+  };
 
   const upload = async (selectedFiles?: FileList | File[]) => {
     const files = Array.from(selectedFiles ?? []);
@@ -76,7 +93,7 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
     setNotice('');
     try {
       const created = await uploadDocuments(
-        files, language, ocrMode,
+        files, languages, ocrMode,
         (loaded, total) => setUploadProgress({ loaded, total }),
         controller.signal,
       );
@@ -118,19 +135,46 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
           ? `${Math.min(100, Math.round((uploadProgress.loaded / uploadProgress.total) * 100))}% uploaded · preparing OCR jobs`
           : 'One file or up to 30 at once'}</p>
         <div className="upload-options">
-          <label><span>Language</span>
-            <select value={language} onChange={(event) => setLanguage(event.target.value)} disabled={uploading}>
-              <option value="aze+eng">Azərbaycanca + English</option>
-              <option value="aze">Azərbaycanca</option>
-              <option value="eng">English</option>
-            </select>
-          </label>
-          <label><span>OCR mode</span>
-            <select value={ocrMode} onChange={(event) => setOcrMode(event.target.value)} disabled={uploading}>
-              <option value="AUTO">Automatic</option>
-              <option value="FORCE_OCR">Complex layouts</option>
-            </select>
-          </label>
+          <section className="upload-option-group" aria-labelledby="language-label">
+            <div className="option-heading">
+              <span id="language-label">Languages to read</span>
+              <small>Choose one or more</small>
+            </div>
+            <div className="language-choices" role="group" aria-labelledby="language-label">
+              {OCR_LANGUAGES.map((language) => {
+                const selected = languages.includes(language.value);
+                return (
+                  <button
+                    key={language.value}
+                    type="button"
+                    className={`language-choice ${selected ? 'selected' : ''}`}
+                    aria-pressed={selected}
+                    disabled={uploading}
+                    onClick={() => toggleLanguage(language.value)}
+                  >
+                    <span className="choice-check"><Check size={13} strokeWidth={3} /></span>
+                    {language.label}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+          <section className="upload-option-group" aria-labelledby="mode-label">
+            <div className="option-heading">
+              <span id="mode-label">Reading mode</span>
+              <small>Pick for this batch</small>
+            </div>
+            <div className="ocr-mode-choices" role="radiogroup" aria-labelledby="mode-label">
+              <button type="button" role="radio" aria-checked={ocrMode === 'AUTO'} disabled={uploading} onClick={() => setOcrMode('AUTO')} className={`ocr-mode-choice ${ocrMode === 'AUTO' ? 'selected' : ''}`}>
+                <span className="mode-choice-mark"><Check size={12} strokeWidth={3} /></span>
+                <span><b>Automatic</b><small>Fast · uses PDF text when reliable</small></span>
+              </button>
+              <button type="button" role="radio" aria-checked={ocrMode === 'FORCE_OCR'} disabled={uploading} onClick={() => setOcrMode('FORCE_OCR')} className={`ocr-mode-choice ${ocrMode === 'FORCE_OCR' ? 'selected' : ''}`}>
+                <span className="mode-choice-mark"><Check size={12} strokeWidth={3} /></span>
+                <span><b>Complex layouts</b><small>Slower · OCR every page</small></span>
+              </button>
+            </div>
+          </section>
         </div>
         <div className="upload-actions">
           <button className="primary-button upload-button" onClick={() => inputRef.current?.click()} disabled={uploading}>
@@ -143,7 +187,7 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
             </button>
           )}
         </div>
-        <div className="upload-meta"><span>1–30 PDFs</span><i /> <span>50 MB each</span><i /> <span>AZ + EN</span></div>
+        <div className="upload-meta"><span>1–30 PDFs</span><i /> <span>50 MB each</span><i /> <span>AZ + EN + RU</span></div>
         {error && <div className="inline-error">{error}</div>}
         {notice && !error && <div className="inline-notice">{notice}</div>}
       </section>

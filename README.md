@@ -2,7 +2,7 @@
 
 Standalone React + Vite frontend for the Markwise OCR highlighter. This repository contains no backend, database credentials, or AWS credentials.
 
-The upload screen accepts one or up to 30 PDFs. The workspace searches all completed documents together, groups mentions by PDF and page, jumps directly to a selected highlight, and exports an Excel findings report in addition to highlighted PDFs. English, Azerbaijani, mixed-language OCR, and force-OCR for decorated layouts are supported.
+The upload screen accepts one or up to 30 PDFs. The workspace searches all completed documents together, groups mentions by PDF and page, jumps directly to a selected highlight, and exports an Excel findings report in addition to highlighted PDFs. Azerbaijani, English, Russian, mixed-language OCR, and force-OCR for complex layouts are supported.
 
 ## Local development
 
