@@ -20,6 +20,7 @@ const OCR_LANGUAGES = [
   { value: 'rus', label: 'Русский' },
 ] as const;
 type OcrLanguage = typeof OCR_LANGUAGES[number]['value'];
+type OcrMode = 'AUTO' | 'FORCE_OCR';
 
 const formatBytes = (bytes: number) => bytes < 1024 * 1024
   ? `${Math.round(bytes / 1024)} KB`
@@ -52,6 +53,72 @@ const downloadBlob = (blob: Blob, fileName: string) => {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+const toggleOcrLanguage = (current: OcrLanguage[], language: OcrLanguage) => {
+  if (current.includes(language)) {
+    // An empty choice only turns into a server-side upload error.
+    return current.length === 1 ? current : current.filter((item) => item !== language);
+  }
+  return [...current, language];
+};
+
+function LanguageOptions({ languages, onChange, disabled }: {
+  languages: OcrLanguage[];
+  onChange: (languages: OcrLanguage[]) => void;
+  disabled: boolean;
+}) {
+  return (
+    <section className="upload-option-group" aria-labelledby="language-label">
+      <div className="option-heading">
+        <span id="language-label">Languages to read</span>
+        <small>Choose one or more</small>
+      </div>
+      <div className="language-choices" role="group" aria-labelledby="language-label">
+        {OCR_LANGUAGES.map((language) => {
+          const selected = languages.includes(language.value);
+          return (
+            <button
+              key={language.value}
+              type="button"
+              className={`language-choice ${selected ? 'selected' : ''}`}
+              aria-pressed={selected}
+              disabled={disabled}
+              onClick={() => onChange(toggleOcrLanguage(languages, language.value))}
+            >
+              <span className="choice-check"><Check size={13} strokeWidth={3} /></span>
+              {language.label}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function OcrModeOptions({ mode, onChange, disabled }: {
+  mode: OcrMode;
+  onChange: (mode: OcrMode) => void;
+  disabled: boolean;
+}) {
+  return (
+    <section className="upload-option-group" aria-labelledby="mode-label">
+      <div className="option-heading">
+        <span id="mode-label">Reading mode</span>
+        <small>Pick for this batch</small>
+      </div>
+      <div className="ocr-mode-choices" role="radiogroup" aria-labelledby="mode-label">
+        <button type="button" role="radio" aria-checked={mode === 'AUTO'} disabled={disabled} onClick={() => onChange('AUTO')} className={`ocr-mode-choice ${mode === 'AUTO' ? 'selected' : ''}`}>
+          <span className="mode-choice-mark"><Check size={12} strokeWidth={3} /></span>
+          <span><b>Automatic</b><small>Fast · uses PDF text when reliable</small></span>
+        </button>
+        <button type="button" role="radio" aria-checked={mode === 'FORCE_OCR'} disabled={disabled} onClick={() => onChange('FORCE_OCR')} className={`ocr-mode-choice ${mode === 'FORCE_OCR' ? 'selected' : ''}`}>
+          <span className="mode-choice-mark"><Check size={12} strokeWidth={3} /></span>
+          <span><b>Complex layouts</b><small>Slower · OCR every page</small></span>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -61,18 +128,7 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [languages, setLanguages] = useState<OcrLanguage[]>(['aze', 'eng']);
-  const [ocrMode, setOcrMode] = useState('AUTO');
-
-  const toggleLanguage = (language: OcrLanguage) => {
-    setLanguages((current) => {
-      if (current.includes(language)) {
-        // Keep at least one recognizer selected; an empty choice can never be
-        // useful and otherwise only becomes a server-side upload error.
-        return current.length === 1 ? current : current.filter((item) => item !== language);
-      }
-      return [...current, language];
-    });
-  };
+  const [ocrMode, setOcrMode] = useState<OcrMode>('AUTO');
 
   const upload = async (selectedFiles?: FileList | File[]) => {
     const files = Array.from(selectedFiles ?? []);
@@ -135,46 +191,8 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
           ? `${Math.min(100, Math.round((uploadProgress.loaded / uploadProgress.total) * 100))}% uploaded · preparing OCR jobs`
           : 'One file or up to 30 at once'}</p>
         <div className="upload-options">
-          <section className="upload-option-group" aria-labelledby="language-label">
-            <div className="option-heading">
-              <span id="language-label">Languages to read</span>
-              <small>Choose one or more</small>
-            </div>
-            <div className="language-choices" role="group" aria-labelledby="language-label">
-              {OCR_LANGUAGES.map((language) => {
-                const selected = languages.includes(language.value);
-                return (
-                  <button
-                    key={language.value}
-                    type="button"
-                    className={`language-choice ${selected ? 'selected' : ''}`}
-                    aria-pressed={selected}
-                    disabled={uploading}
-                    onClick={() => toggleLanguage(language.value)}
-                  >
-                    <span className="choice-check"><Check size={13} strokeWidth={3} /></span>
-                    {language.label}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-          <section className="upload-option-group" aria-labelledby="mode-label">
-            <div className="option-heading">
-              <span id="mode-label">Reading mode</span>
-              <small>Pick for this batch</small>
-            </div>
-            <div className="ocr-mode-choices" role="radiogroup" aria-labelledby="mode-label">
-              <button type="button" role="radio" aria-checked={ocrMode === 'AUTO'} disabled={uploading} onClick={() => setOcrMode('AUTO')} className={`ocr-mode-choice ${ocrMode === 'AUTO' ? 'selected' : ''}`}>
-                <span className="mode-choice-mark"><Check size={12} strokeWidth={3} /></span>
-                <span><b>Automatic</b><small>Fast · uses PDF text when reliable</small></span>
-              </button>
-              <button type="button" role="radio" aria-checked={ocrMode === 'FORCE_OCR'} disabled={uploading} onClick={() => setOcrMode('FORCE_OCR')} className={`ocr-mode-choice ${ocrMode === 'FORCE_OCR' ? 'selected' : ''}`}>
-                <span className="mode-choice-mark"><Check size={12} strokeWidth={3} /></span>
-                <span><b>Complex layouts</b><small>Slower · OCR every page</small></span>
-              </button>
-            </div>
-          </section>
+          <LanguageOptions languages={languages} onChange={setLanguages} disabled={uploading} />
+          <OcrModeOptions mode={ocrMode} onChange={setOcrMode} disabled={uploading} />
         </div>
         <div className="upload-actions">
           <button className="primary-button upload-button" onClick={() => inputRef.current?.click()} disabled={uploading}>
@@ -196,12 +214,74 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
   );
 }
 
-function ProcessingScreen({ documents, stopping, onRetry, onDiscard }: {
+function AddDocumentsDialog({ onUploaded, onClose }: {
+  onUploaded: (documents: DocumentRecord[]) => void;
+  onClose: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [languages, setLanguages] = useState<OcrLanguage[]>(['aze', 'eng']);
+  const [ocrMode, setOcrMode] = useState<OcrMode>('AUTO');
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const [progress, setProgress] = useState<{ loaded: number; total: number } | null>(null);
+
+  const upload = async (selectedFiles?: FileList | File[]) => {
+    const files = Array.from(selectedFiles ?? []);
+    if (!files.length) return;
+    if (files.length > MAX_BATCH_FILES) {
+      setError(`Choose no more than ${MAX_BATCH_FILES} PDFs at once.`);
+      return;
+    }
+    if (files.some((file) => file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf'))) {
+      setError('Every selected file must be a PDF.');
+      return;
+    }
+    setUploading(true);
+    setProgress({ loaded: 0, total: files.reduce((total, file) => total + file.size, 0) });
+    setError('');
+    try {
+      const created = await uploadDocuments(files, languages, ocrMode, (loaded, total) => setProgress({ loaded, total }));
+      onUploaded(created.map((document) => ({ ...document, pages: [], highlights: [] })));
+      onClose();
+    } catch (reason) {
+      setError(errorMessage(reason));
+    } finally {
+      setUploading(false);
+      setProgress(null);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="add-documents-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !uploading) onClose(); }}>
+      <section className="add-documents-dialog" role="dialog" aria-modal="true" aria-labelledby="add-documents-title">
+        <button className="dialog-close" type="button" onClick={onClose} disabled={uploading} aria-label="Close add PDFs dialog"><X size={18} /></button>
+        <div className="dialog-icon"><Files size={21} /></div>
+        <h2 id="add-documents-title">Add PDFs to the queue</h2>
+        <p>Your current files will keep reading while these upload.</p>
+        <div className="upload-options modal-upload-options">
+          <LanguageOptions languages={languages} onChange={setLanguages} disabled={uploading} />
+          <OcrModeOptions mode={ocrMode} onChange={setOcrMode} disabled={uploading} />
+        </div>
+        <input ref={inputRef} type="file" accept="application/pdf,.pdf" multiple hidden onChange={(event) => void upload(event.target.files ?? undefined)} />
+        <button className="primary-button add-files-button" type="button" onClick={() => inputRef.current?.click()} disabled={uploading}>
+          {uploading ? <LoaderCircle className="spin" size={18} /> : <UploadCloud size={18} />}
+          {uploading && progress?.total ? `Uploading ${Math.min(100, Math.round((progress.loaded / progress.total) * 100))}%` : 'Choose PDFs to add'}
+        </button>
+        {error && <p className="dialog-error">{error}</p>}
+      </section>
+    </div>
+  );
+}
+
+function ProcessingScreen({ documents, stopping, onRetry, onDiscard, onUploaded }: {
   documents: DocumentRecord[];
   stopping: boolean;
   onRetry: (id: string) => void;
   onDiscard: (ids: string[]) => void;
+  onUploaded: (documents: DocumentRecord[]) => void;
 }) {
+  const [adding, setAdding] = useState(false);
   const complete = documents.filter((document) => document.ocrStatus === 'COMPLETE').length;
   const failed = documents.filter((document) => document.ocrStatus === 'FAILED').length;
   const finished = complete + failed;
@@ -261,12 +341,16 @@ function ProcessingScreen({ documents, stopping, onRetry, onDiscard }: {
         ))}
       </div>
       <div className="processing-actions">
+        <button className="add-more-button" onClick={() => setAdding(true)} disabled={stopping}>
+          <Plus size={17} /> Add more PDFs
+        </button>
         <button className="stop-button" onClick={() => onDiscard(documents.map((document) => document.id))} disabled={stopping}>
           {stopping ? <LoaderCircle className="spin" size={17} /> : <OctagonX size={17} />}
           {stopping ? 'Stopping…' : 'Stop and discard all'}
         </button>
-        <small>Stopping cancels the remaining pages and deletes the uploaded files from the server.</small>
+        <small>New uploads join the queue. Stopping cancels and deletes all current files.</small>
       </div>
+      {adding && <AddDocumentsDialog onUploaded={onUploaded} onClose={() => setAdding(false)} />}
     </div>
   );
 }
@@ -598,7 +682,16 @@ export function App() {
   if (restoring) return <div className="processing-screen"><LoaderCircle className="status-icon spin" size={38} /><p>Opening your workspace…</p></div>;
   if (!documents.length) return <UploadScreen onUploaded={(created) => { setDocuments(created); setActiveDocumentId(created[0]?.id ?? ''); history.reset([]); }} />;
   if (hasProcessing || !readyDocuments.length) {
-    return <ProcessingScreen documents={documents} stopping={stopping} onRetry={retry} onDiscard={(ids) => void discardDocuments(ids)} />;
+    return <ProcessingScreen
+      documents={documents}
+      stopping={stopping}
+      onRetry={retry}
+      onDiscard={(ids) => void discardDocuments(ids)}
+      onUploaded={(created) => {
+        setDocuments((current) => [...current, ...created]);
+        setActiveDocumentId((current) => current || created[0]?.id || '');
+      }}
+    />;
   }
   if (!document) return null;
 
