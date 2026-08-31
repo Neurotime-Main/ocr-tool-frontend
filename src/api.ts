@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { DocumentRecord, Highlight, WorkspaceDocument } from './types';
+import type { BatchPublishReport, DocumentRecord, Highlight, ServerKeyword, WorkspaceDocument } from './types';
 
 const baseURL = (import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api').replace(/\/+$/, '');
 
@@ -7,17 +7,16 @@ export const api = axios.create({ baseURL });
 
 export const fileUrl = (documentId: string) => `${baseURL}/documents/${documentId}/file`;
 
-export async function uploadDocument(file: File, languages = ['eng'], ocrMode = 'AUTO') {
-  const body = new FormData();
-  body.append('file', file);
-  body.append('language', languages.join('+'));
-  body.append('ocrMode', ocrMode);
-  return (await api.post<DocumentRecord>('/documents', body)).data;
-}
-
+/**
+ * Uploads a batch of documents in one request.
+ *
+ * The server persists them in parallel and answers once every file is stored,
+ * so the browser sees a single progress bar for the whole set rather than one
+ * per file. Reading and recognising them happens afterwards, in the background.
+ */
 export async function uploadDocuments(
   files: File[],
-  languages = ['eng'],
+  languages: string[] = ['aze'],
   ocrMode = 'AUTO',
   onProgress?: (loaded: number, total: number) => void,
   signal?: AbortSignal,
@@ -61,10 +60,21 @@ export async function saveHighlights(documentId: string, highlights: Highlight[]
   return (await api.put<{ highlights: Highlight[] }>(`/documents/${documentId}/highlights`, { highlights })).data.highlights;
 }
 
-export async function exportDocument(documentId: string, highlights: Highlight[]) {
-  return (await api.post<Blob>(`/documents/${documentId}/export`, { highlights }, { responseType: 'blob' })).data;
+/**
+ * The keywords this platform tracks for newspapers, with their projects.
+ *
+ * Operators pick from these rather than typing free text, so what is searched
+ * for matches what the rest of the platform reports on.
+ */
+export async function fetchKeywords() {
+  return (await api.get<{ sourceTypeId: number; keywords: ServerKeyword[] }>('/keywords')).data;
 }
 
-export async function exportFindings(documentIds: string[]) {
-  return (await api.post<Blob>('/reports/excel', { ids: documentIds }, { responseType: 'blob' })).data;
+/**
+ * Publishes the reviewed mentions for the whole batch in one request: one
+ * highlighted image per keyword per page, and one media_results row per project
+ * behind each image.
+ */
+export async function publishDocuments(documentIds: string[]) {
+  return (await api.post<BatchPublishReport>('/documents/publish', { ids: documentIds })).data;
 }

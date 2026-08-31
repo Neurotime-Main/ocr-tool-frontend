@@ -69,3 +69,38 @@ export type Finding = {
   note: string;
   confidence: number | null;
 };
+
+/** A keyword offered by the platform, with the projects it belongs to. */
+export type ServerKeyword = {
+  id: number;
+  text: string;
+  projectIds: number[];
+};
+
+export type PublishedRow = {
+  keyword: string;
+  pageNumber: number;
+  projectIds: number[];
+  url: string;
+  resultIds: number[];
+};
+
+/** What publishing one document wrote, including what it deliberately skipped. */
+export type PublishReport = {
+  documentId: string;
+  author: string;
+  date: string;
+  dateFromFileName: boolean;
+  images: number;
+  rows: number;
+  published: PublishedRow[];
+  skipped: Array<{ keyword: string; pageNumber: number; reason: string }>;
+};
+
+/** The whole batch: every document published in one action. */
+export type BatchPublishReport = {
+  documents: Array<PublishReport & { originalName: string }>;
+  skippedDocuments: Array<{ documentId: string; originalName: string; reason: string }>;
+  images: number;
+  rows: number;
+};

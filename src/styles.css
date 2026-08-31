@@ -20,16 +20,26 @@ button, textarea, input { font: inherit; }
 button { color: inherit; transition: background-color .16s ease, border-color .16s ease, color .16s ease, opacity .16s ease, transform .16s ease; }
 button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid rgba(76, 129, 94, .34); outline-offset: 2px; }
 
-.welcome-shell { min-height: 100vh; background: radial-gradient(circle at 50% 42%, #fff 0, #f7f8f4 44%, #eef1ea 100%); display: flex; flex-direction: column; align-items: center; }
+/* The landing page is one screen, not a document: everything needed to start a
+   job has to be reachable without scrolling. The vertical rhythm below is
+   therefore sized in `vh` rather than fixed pixels, so the hero gives up space
+   to the upload card as the viewport gets shorter instead of pushing it under
+   the fold. `dvh` rather than `vh` because mobile browser chrome counts.
+   The page itself never scrolls: the shell is exactly one viewport tall and the
+   header stays put. Should the content still not fit -- a very short window, a
+   long error -- the inner region scrolls rather than clipping, because hiding
+   the upload button is the one outcome worse than a scrollbar. */
+.welcome-shell { height: 100dvh; overflow: hidden; background: radial-gradient(circle at 50% 42%, #fff 0, #f7f8f4 44%, #eef1ea 100%); display: flex; flex-direction: column; align-items: center; }
+/* Holds the hero and the card, centred, and is the part allowed to shrink. */
+.welcome-body { min-height: 0; flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: clamp(4px, 1vh, 24px) 0; overflow-y: auto; }
 .welcome-header { height: 76px; width: 100%; display: flex; align-items: center; padding: 0 42px; border-bottom: 1px solid rgba(80,91,75,.11); }
 .brand-mark { width: 38px; height: 38px; border-radius: 11px; background: var(--green); color: white; display: grid; place-items: center; box-shadow: 0 7px 18px rgba(36,86,63,.18); }
 .brand-mark.small { width: 31px; height: 31px; border-radius: 8px; box-shadow: none; }
 .brand-name { font-size: 17px; font-weight: 700; letter-spacing: -.3px; margin-left: 10px; }
-.brand-badge { color: #687068; background: #e8ebe5; padding: 4px 9px; border-radius: 99px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; margin-left: 12px; }
-.welcome-copy { text-align: center; max-width: 650px; margin: 64px auto 30px; }
+.welcome-copy { text-align: center; max-width: 650px; margin: 0 auto clamp(10px, 1.8vh, 30px); }
 .eyebrow { color: var(--green); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
 .eyebrow span { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #70a483; margin-right: 6px; }
-.welcome-copy h1 { font-family: 'DM Serif Display', Georgia, serif; font-size: clamp(52px, 5.2vw, 72px); line-height: .98; letter-spacing: -2.4px; margin: 18px 0 20px; font-weight: 400; }
+.welcome-copy h1 { font-family: 'DM Serif Display', Georgia, serif; font-size: clamp(30px, min(5.2vw, 6.6vh), 72px); line-height: 1.02; letter-spacing: -2.4px; margin: clamp(8px, 1.6vh, 18px) 0 clamp(8px, 1.8vh, 20px); font-weight: 400; }
 .welcome-copy h1 em { color: #517562; font-weight: 400; }
 .welcome-copy p { color: var(--muted); font-size: 16px; line-height: 1.65; margin: auto; max-width: 590px; }
 .upload-card { position: relative; width: min(620px, calc(100vw - 40px)); background: rgba(255,255,255,.86); border: 1.5px dashed #c5cbc1; border-radius: 18px; padding: 32px; text-align: center; box-shadow: 0 24px 70px rgba(50,60,46,.09); transition: .2s; }
@@ -42,7 +52,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .option-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 11px; }
 .option-heading > span { color: #354039; font-size: 12px; font-weight: 700; }
 .option-heading small { color: #858d84; font-size: 10px; }
-.language-choices, .ocr-mode-choices { display: grid; gap: 7px; }
+/* Two columns for the languages: the list grew from three to five, and stacking
+   them is what pushed the upload button below the fold. The reading modes stay
+   in one column -- each carries a description line and reads as a choice, not a
+   checklist. */
+.language-choices { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; align-content: start; }
+.ocr-mode-choices { display: grid; gap: 7px; }
 .language-choice, .ocr-mode-choice { width: 100%; border: 1px solid #d7ded5; background: #fff; color: #576057; cursor: pointer; text-align: left; }
 .language-choice { min-height: 35px; display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: 9px; font-size: 12px; font-weight: 600; }
 .choice-check, .mode-choice-mark { display: grid; flex: none; place-items: center; color: transparent; border: 1.5px solid #b8c2b7; background: #fff; }
@@ -65,18 +80,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .primary-button:disabled { opacity: .6; cursor: wait; }
 .upload-meta { display: flex; justify-content: center; align-items: center; gap: 10px; color: #969b93; font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: .7px; margin-top: 22px; }
 .upload-meta i { width: 3px; height: 3px; background: #bfc4bc; border-radius: 50%; }
-.inline-error { margin-top: 16px; font-size: 12px; color: #a83a3a; }
 .inline-notice { margin-top: 16px; font-size: 12px; color: #5a6a5e; }
+.upload-alert { position: fixed; z-index: 60; top: 20px; right: 20px; width: min(380px, calc(100vw - 32px)); display: flex; align-items: flex-start; gap: 10px; padding: 13px 12px; border: 1px solid #e8c8a7; border-radius: 12px; background: #fffaf3; color: #81521c; box-shadow: 0 14px 36px rgba(76, 55, 26, .16); animation: alert-in .2s ease-out; }
+.upload-alert > svg { flex: none; margin-top: 2px; color: #b26a1f; }
+.upload-alert span { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.upload-alert b { font-size: 12px; }
+.upload-alert small { color: #866941; font-size: 11px; line-height: 1.4; }
+.upload-alert button { width: 26px; height: 26px; display: grid; flex: none; place-items: center; margin: -3px -3px 0 0; border: 0; border-radius: 7px; background: transparent; color: #92662c; cursor: pointer; }
+.upload-alert button:hover { background: #f7ead8; color: #69430f; }
+@keyframes alert-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
 .upload-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
 .cancel-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 11px 16px; border: 1px solid #e2c7c7; border-radius: 9px; background: #fff6f6; color: #9b3f3f; font-size: 13px; font-weight: 600; cursor: pointer; transition: .15s; }
 .cancel-button:hover { border-color: #d3a9a9; background: #fdeded; }
-.upload-card > .mode-help { min-height: 17px; margin: -8px auto 14px; max-width: 430px; color: #798078; font-size: 10px; line-height: 1.45; }
-.upload-guidance { width: min(620px, calc(100vw - 40px)); display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
-.upload-guidance > div { min-width: 0; display: flex; align-items: flex-start; gap: 8px; padding: 11px; border: 1px solid rgba(212, 217, 207, .85); border-radius: 10px; background: rgba(255,255,255,.48); color: var(--green); }
-.upload-guidance span { display: flex; min-width: 0; flex-direction: column; gap: 2px; color: #687068; }
-.upload-guidance b { color: #3e4b42; font-size: 10px; }
-.upload-guidance small { font-size: 9px; line-height: 1.4; }
-.welcome-footer { margin-top: auto; padding: 30px; color: #9ba098; font-size: 11px; }
+.welcome-footer { flex: none; padding: clamp(8px, 1.8vh, 30px); color: #9ba098; font-size: 11px; }
 
 .processing-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f4f6f1; text-align: center; padding: 30px; }
 .processing-screen .brand-mark { margin-bottom: 40px; }
@@ -84,8 +100,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .status-icon.failed { color: #b74646; padding: 6px; background: #fae8e8; border-radius: 50%; }
 .processing-screen h1 { font-family: 'DM Serif Display', serif; font-size: 38px; font-weight: 400; margin: 0 0 10px; }
 .processing-screen > p { max-width: 520px; color: var(--muted); line-height: 1.6; }
-.file-pill { display: flex; gap: 8px; align-items: center; padding: 10px 15px; margin: 18px 0; background: white; border: 1px solid var(--line); border-radius: 10px; font-size: 12px; }
-.file-pill small { margin-left: 5px; color: #818880; font-size: 9px; font-weight: 700; }
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -109,18 +123,62 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .right-panel { border-left: 1px solid var(--line); }
 .panel-section { padding: 18px 16px; border-bottom: 1px solid var(--line); }
 .panel-section > label, .inspector-content > label { display: flex; justify-content: space-between; color: #535a52; font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: .7px; margin-bottom: 9px; }
-.keyword-box { display: flex; align-items: center; background: white; border: 1px solid #d6dad2; border-radius: 9px; padding: 5px; }
-.keyword-box:focus-within { border-color: #6d907b; box-shadow: 0 0 0 3px #e7efe9; }
-.keyword-box textarea { resize: none; border: 0; outline: 0; height: 40px; flex: 1; padding: 7px; font-size: 12px; background: transparent; }
-.keyword-box button { border: 0; align-self: stretch; color: white; background: var(--green); border-radius: 7px; display: flex; gap: 3px; align-items: center; justify-content: center; cursor: pointer; }
-.keyword-box .keyword-add { width: 51px; font-size: 10px; font-weight: 700; }
-.keyword-box button:disabled { background: #adb6af; }
-.field-help { color: #858d84; font-size: 9px; line-height: 1.45; margin: 7px 0 0; }
-.field-help kbd { padding: 1px 4px; border: 1px solid #d5d9d2; border-radius: 3px; background: #fff; color: #5d665d; font: inherit; font-weight: 700; }
-.keyword-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
-.keyword-chips span { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--green); background: var(--green-soft); padding: 4px 4px 4px 7px; border-radius: 5px; }
-.keyword-chips button { width: 16px; height: 16px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 3px; background: transparent; color: #4f755d; cursor: pointer; }
-.keyword-chips button:hover { background: #cbdccf; }
+/* The keyword picker.
+   Keywords come from the platform, so this is a filter over a fixed list rather
+   than free-text entry. The field is a search input, not the textarea the old
+   the free-text entry it replaced was built around, so it gets rules of its own
+   rather than inheriting ones shaped for a different control. */
+.keyword-search { display: flex; align-items: center; gap: 7px; padding: 0 9px; background: #fff;
+  border: 1px solid #d6dad2; border-radius: 9px; color: #8d948b; }
+.keyword-search:focus-within { border-color: #6d907b; box-shadow: 0 0 0 3px #e7efe9; }
+.keyword-search > svg { flex: none; }
+.keyword-search input { flex: 1; min-width: 0; height: 36px; padding: 0; border: 0; outline: 0;
+  background: transparent; color: var(--ink); font-size: 12px; }
+.keyword-search input::placeholder { color: #a3aaa1; }
+.keyword-search input:disabled { cursor: not-allowed; }
+/* `type=text` rather than `search`, so this is the only clear affordance and it
+   matches the rest of the panel instead of the browser's own glyph. */
+.keyword-search-clear { flex: none; width: 20px; height: 20px; display: grid; place-items: center;
+  padding: 0; border: 0; border-radius: 5px; background: transparent; color: #8d948b; cursor: pointer; }
+.keyword-search-clear:hover { background: #ecefe9; color: #37433b; }
+
+.label-count { color: #8d948b; font-weight: 600; letter-spacing: 0; text-transform: none; }
+
+.keyword-status { display: flex; align-items: center; gap: 6px; margin-top: 10px; padding: 8px 10px;
+  border-radius: 8px; background: #f2f4ef; color: #6b736a; font-size: 10px; font-weight: 600; }
+.keyword-status.error { background: #fbeeee; color: #a34141; }
+.keyword-status svg { flex: none; }
+
+/* A scrollable cloud: the list can run to hundreds, and chips pack far more
+   into the panel's height than one row each would. */
+/* The shadows at the top and bottom edges appear only when there is more to
+   scroll to, using the `local`/`scroll` background trick: the list is clipped
+   mid-row by design -- a partial chip is itself a cue -- but without this a full
+   final row looks like the end of the list when it is not. */
+.keyword-available { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 5px;
+  max-height: 168px; margin-top: 10px; padding: 9px; overflow-y: auto;
+  border: 1px solid #dce2da; border-radius: 10px;
+  background:
+    linear-gradient(#fff 30%, rgba(255,255,255,0)) top / 100% 15px no-repeat local,
+    linear-gradient(rgba(255,255,255,0), #fff 70%) bottom / 100% 15px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgba(45,58,45,.14), rgba(45,58,45,0)) top / 100% 6px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgba(45,58,45,.14), rgba(45,58,45,0)) bottom / 100% 6px no-repeat scroll,
+    #fff;
+  scrollbar-width: thin; }
+.keyword-chip { display: inline-flex; align-items: center; gap: 4px; max-width: 100%;
+  padding: 5px 9px 5px 7px; border: 1px solid #e0e5dd; border-radius: 999px; background: #f7f9f5;
+  color: #3d473e; font-size: 10.5px; font-weight: 600; line-height: 1.25; cursor: pointer; }
+.keyword-chip > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.keyword-chip > svg { flex: none; color: #8a9488; }
+.keyword-chip:hover { border-color: var(--green); background: var(--green-soft); color: var(--green); }
+.keyword-chip:hover > svg { color: var(--green); }
+/* A keyword with no project can still be searched, but publishing it produces
+   no rows -- worth flagging quietly rather than hiding or blocking. */
+.keyword-chip.orphan { border-style: dashed; border-color: #dcd8ca; background: #faf9f5; color: #6f6a5c; }
+.keyword-chip.orphan:hover { border-color: #c0a768; background: #f8f3e4; color: #5d5340; }
+.keyword-chip.orphan > svg { color: #a8a08a; }
+.keyword-empty { width: 100%; margin: 0; padding: 8px 2px; color: #8d948b; font-size: 10px; text-align: center; }
+
 .keyword-list { margin-top: 14px; border: 1px solid #dce2da; border-radius: 10px; overflow: hidden; background: #fff; }
 .keyword-list-header { min-height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid #e3e7e1; background: #f5f8f4; color: #596457; font-size: 10px; font-weight: 700; }
 .keyword-list-header button { border: 0; background: transparent; color: #54725d; font-size: 10px; font-weight: 700; cursor: pointer; }
@@ -134,8 +192,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .keyword-actions { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
 .find-button { flex: 1; border: 0; min-width: 0; padding: 8px 10px; border-radius: 7px; background: var(--green); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 10px; font-weight: 700; cursor: pointer; }
 .find-button:disabled { background: #adb6af; cursor: not-allowed; }
-.clear-keywords { border: 0; color: #7b817a; background: transparent; padding: 6px 2px; font-size: 10px; cursor: pointer; }
-.clear-keywords:hover { color: #37433b; text-decoration: underline; }
 .tool-section { padding-top: 14px; padding-bottom: 14px; }
 .tool-button { width: 100%; display: flex; align-items: center; gap: 9px; padding: 9px; border: 1px solid transparent; background: transparent; border-radius: 8px; text-align: left; cursor: pointer; }
 .tool-button:hover, .tool-button.active { background: var(--green-soft); border-color: #cfddd2; color: var(--green); }
@@ -158,7 +214,19 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .empty-results p, .empty-inspector p { color: #545a53; font-size: 12px; font-weight: 600; margin: 8px 0 4px; }
 .empty-results small, .empty-inspector small { font-size: 10px; line-height: 1.5; display: block; }
 .result-group { margin-bottom: 7px; }
-.page-group-title { display: flex; justify-content: space-between; width: 100%; border: 0; background: transparent; padding: 7px 8px; font-size: 10px; font-weight: 700; color: #7b8179; cursor: pointer; }
+/* A group header is a row, not a button: the chevron folds the group away while
+   the label still jumps to the page, so the two actions need separate targets. */
+.page-group-title { display: flex; align-items: center; gap: 4px; width: 100%; padding: 7px 8px; font-size: 10px; font-weight: 700; color: #7b8179; }
+.page-group-title > b { min-width: 20px; padding: 2px 5px; border-radius: 99px; background: #eef1ec; color: #6c746b; font-size: 9px; text-align: center; }
+.group-collapse { display: grid; flex: none; place-items: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 5px; background: transparent; color: inherit; cursor: pointer; }
+.group-collapse:hover { background: rgba(36, 86, 63, .1); }
+.group-collapse svg { transition: transform .16s ease; }
+/* Chevron points right when the group is folded. */
+.collapsed .group-collapse svg { transform: rotate(-90deg); }
+.group-label { min-width: 0; flex: 1; display: flex; align-items: center; gap: 7px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.group-label > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.group-label:hover { color: var(--green); }
+.group-label > svg { flex: none; }
 .result-row { border: 0; background: transparent; display: flex; align-items: center; width: 100%; gap: 8px; padding: 8px; border-radius: 7px; text-align: left; cursor: pointer; }
 .result-row:hover, .result-row.selected { background: #eef1ec; }
 .result-row.selected { box-shadow: inset 2px 0 0 var(--green); }
@@ -244,15 +312,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 @media (max-width: 720px) {
   .welcome-header { height: 64px; padding: 0 20px; }
-  .brand-badge { display: none; }
   .welcome-copy { margin: 44px 20px 24px; }
   .welcome-copy h1 { font-size: clamp(43px, 13vw, 56px); letter-spacing: -1.6px; }
   .welcome-copy p { font-size: 14px; }
   .upload-card { padding: 24px 18px; }
   .upload-options, .upload-guidance { grid-template-columns: 1fr; }
-  .upload-guidance { gap: 7px; margin-top: 14px; }
-  .upload-guidance > div { padding: 9px 11px; }
-  .welcome-footer { padding: 22px; text-align: center; }
+  .welcome-footer { padding: clamp(8px, 1.6vh, 22px); text-align: center; }
 
   .app-shell { height: 100dvh; grid-template-columns: minmax(205px, 62vw) minmax(0, 1fr); grid-template-rows: 54px minmax(0, 1fr); }
   .topbar { grid-template-columns: minmax(205px, 62vw) minmax(0, 1fr) auto; min-width: 0; padding-right: 7px; }
@@ -266,9 +331,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .export-button svg { width: 15px; }
   .left-panel { min-width: 0; }
   .panel-section { padding: 14px 11px; }
-  .keyword-box textarea { font-size: 11px; }
-  .keyword-box .keyword-add { width: 36px; }
-  .keyword-add span, .clear-keywords { display: none; }
+  .keyword-search input { font-size: 11.5px; }
+  .keyword-available { max-height: 148px; }
   .keyword-actions { margin-top: 9px; }
   .tool-section { padding-top: 10px; padding-bottom: 10px; }
   .results-heading { padding: 11px 11px 6px; }
@@ -290,6 +354,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .toast { max-width: calc(100vw - 30px); text-align: left; }
 }
 
+/* On a short screen the hero gives up its ornament before the card gives up any
+   of its controls: the eyebrow and the sub-heading are scene-setting, the
+   upload button is the reason the page exists. */
+@media (max-height: 820px) {
+  .eyebrow { display: none; }
+  .welcome-copy h1 { margin-top: 0; }
+}
+@media (max-height: 790px) {
+  .welcome-copy p { display: none; }
+}
+/* At this point the headline itself is the only ornament left. */
+@media (max-height: 660px) {
+  .welcome-copy { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
@@ -298,21 +377,21 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .welcome-header { height: 82px; padding: 0 clamp(22px, 5vw, 64px); }
 .brand-mark { width: 44px; height: 44px; border-radius: 13px; }
 .brand-name { margin-left: 11px; font-size: 19px; letter-spacing: -.5px; }
-.welcome-copy { max-width: 690px; margin: 76px auto 34px; }
+.welcome-copy { max-width: 690px; margin: 0 auto clamp(10px, 2vh, 34px); }
 .welcome-copy p { max-width: 610px; font-size: 17px; }
-.upload-card { width: min(660px, calc(100vw - 40px)); border-width: 2px; border-radius: 22px; padding: 42px; }
-.upload-icon { width: 64px; height: 64px; margin-bottom: 17px; border-radius: 18px; }
+.upload-card { width: min(660px, calc(100vw - 40px)); border-width: 2px; border-radius: 22px; padding: clamp(16px, 3.4vh, 42px) clamp(20px, 3vw, 42px); }
+.upload-icon { width: clamp(40px, 6.4vh, 64px); height: clamp(40px, 6.4vh, 64px); margin-bottom: clamp(7px, 1.6vh, 17px); border-radius: 18px; }
 .upload-card h2 { margin-bottom: 7px; font-size: 23px; }
-.upload-card > p { margin-bottom: 26px; font-size: 14px; }
-.upload-options { gap: 16px; margin-bottom: 24px; }
-.upload-option-group { padding: 16px; border-radius: 16px; }
+.upload-card > p { margin-bottom: clamp(8px, 1.8vh, 26px); font-size: 14px; }
+.upload-options { gap: clamp(9px, 1.4vh, 16px); margin-bottom: clamp(9px, 1.7vh, 24px); }
+.upload-option-group { padding: clamp(9px, 1.6vh, 16px); border-radius: 16px; }
 .option-heading > span { font-size: 13px; }
 .language-choice { min-height: 39px; font-size: 13px; }
 .ocr-mode-choice { min-height: 52px; padding: 10px; }
 .ocr-mode-choice b { font-size: 12px; }
 .ocr-mode-choice small { font-size: 10px; }
 .primary-button { min-height: 48px; padding: 12px 24px; font-size: 14px; }
-.upload-meta { margin-top: 25px; }
+.upload-meta { margin-top: clamp(8px, 1.7vh, 25px); }
 
 .app-shell { grid-template-columns: 320px minmax(0, 1fr) 300px; grid-template-rows: 72px minmax(0, 1fr); }
 .topbar { grid-template-columns: 320px 1fr auto; padding-right: 20px; }
@@ -326,12 +405,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 
 .panel-section { padding: 24px 20px; }
 .panel-section > label, .inspector-content > label { margin-bottom: 12px; color: #3c453d; font-size: 13px; letter-spacing: 0; text-transform: none; }
-.keyword-box { padding: 6px; border-radius: 12px; }
-.keyword-box textarea { height: 52px; padding: 10px; font-size: 14px; }
-.keyword-box .keyword-add { width: 62px; font-size: 12px; }
-.keyword-chips { gap: 7px; margin-top: 13px; }
-.keyword-chips span { gap: 5px; padding: 7px 6px 7px 10px; border-radius: 8px; font-size: 12px; }
-.keyword-chips button { width: 21px; height: 21px; border-radius: 5px; }
+.keyword-search { padding: 0 11px; border-radius: 12px; gap: 9px; }
+.keyword-search input { height: 46px; font-size: 14px; }
+.keyword-search-clear { width: 24px; height: 24px; border-radius: 6px; }
+.label-count { font-size: 12px; }
+.keyword-status { margin-top: 12px; padding: 9px 12px; border-radius: 10px; font-size: 12px; }
+.keyword-available { max-height: 210px; margin-top: 12px; padding: 11px; gap: 6px; border-radius: 12px; }
+.keyword-chip { padding: 6px 11px 6px 8px; font-size: 12.5px; }
+.keyword-empty { font-size: 12px; }
 .keyword-list { margin-top: 16px; border-radius: 12px; }
 .keyword-list-header { min-height: 38px; padding: 8px 11px; font-size: 11px; }
 .keyword-list-header button { font-size: 11px; }
@@ -340,7 +421,6 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .keyword-list li button { width: 31px; height: 31px; }
 .keyword-actions { gap: 10px; margin-top: 15px; }
 .find-button { min-height: 46px; padding: 10px 14px; border-radius: 10px; gap: 8px; font-size: 13px; }
-.clear-keywords { padding: 9px 3px; font-size: 12px; }
 .tool-section { padding-top: 18px; padding-bottom: 18px; }
 .tool-button { min-height: 58px; gap: 12px; padding: 11px; border-radius: 10px; }
 .tool-button b { font-size: 13px; }
@@ -397,8 +477,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
   .app-shell { grid-template-columns: minmax(220px, 64vw) minmax(0, 1fr); grid-template-rows: 60px minmax(0, 1fr); }
   .topbar { grid-template-columns: minmax(220px, 64vw) minmax(0, 1fr) auto; }
   .panel-section { padding: 16px 12px; }
-  .keyword-box textarea { height: 46px; font-size: 12px; }
-  .keyword-box .keyword-add { width: 44px; }
+  .keyword-search { padding: 0 9px; gap: 7px; }
+  .keyword-search input { height: 40px; font-size: 12.5px; }
+  /* The panel is a narrow overlay here, so the cloud gives back height rather
+     than pushing the search button and the mention list off-screen. */
+  .keyword-available { max-height: 132px; padding: 8px; }
+  .keyword-chip { font-size: 11.5px; }
   .find-button { min-height: 42px; font-size: 11px; }
   .results-heading { padding: 14px 12px 8px; font-size: 12px; }
   .result-row { min-height: 50px; }
@@ -444,18 +528,14 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .add-files-button { width: 100%; min-height: 46px; font-size: 13px; }
 .add-documents-dialog > .dialog-error { margin: 12px 0 0; color: #a83a3a; font-size: 12px; }
 
-.document-switcher { min-height: 68px; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 10px; padding: 12px 20px; border-bottom: 1px solid var(--line); color: var(--green); }
-.document-switcher select { min-width: 0; height: 42px; padding: 0 34px 0 11px; overflow: hidden; border: 1px solid #d3d9d1; border-radius: 10px; outline: 0; background: #fff; color: #303832; font-size: 12px; font-weight: 700; text-overflow: ellipsis; }
-.document-switcher select:focus { border-color: #6d907b; box-shadow: 0 0 0 3px #e7efe9; }
-.document-switcher > span { grid-column: 2; margin-top: -7px; color: #888f87; font-size: 10px; font-weight: 600; }
-.excel-button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-left: 9px; padding: 10px 15px; border: 1px solid #bdd0c2; border-radius: 9px; background: #edf5ef; color: var(--green); font-size: 13px; font-weight: 700; cursor: pointer; }
-.excel-button:hover:not(:disabled) { border-color: #9ab7a3; background: #deede2; transform: translateY(-1px); }
-.excel-button:disabled, .export-button:disabled { opacity: .55; cursor: default; transform: none; }
+.export-button:disabled { opacity: .55; cursor: default; transform: none; }
 .batch-results-list { padding-top: 5px; }
-.document-group-title { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 9px; overflow: hidden; border: 0; border-radius: 9px; background: #e8efe9; color: var(--green); cursor: pointer; }
-.document-group-title > span { min-width: 0; flex: 1; overflow: hidden; font-size: 12px; font-weight: 700; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
-.document-group-title > b { min-width: 24px; padding: 3px 6px; border-radius: 99px; background: #fff; font-size: 10px; text-align: center; }
+.document-group-title { width: 100%; min-height: 44px; display: flex; align-items: center; gap: 6px; margin-top: 8px; padding: 8px 9px; overflow: hidden; border: 0; border-radius: 9px; background: #e8efe9; color: var(--green); }
+.document-group-title .group-label { font-size: 12px; font-weight: 700; }
+.document-group-title > b { min-width: 24px; flex: none; padding: 3px 6px; border-radius: 99px; background: #fff; font-size: 10px; text-align: center; }
 .document-group-title:hover { background: #dce9df; }
+/* A folded document keeps its header flush with the next one. */
+.document-group-title.collapsed { margin-bottom: 0; }
 .batch-results-list .page-group-title { padding-left: 13px; }
 .batch-results-list .result-row small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .search-overlay { position: absolute; z-index: 15; top: 50%; left: 50%; min-width: 230px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 22px 28px; border: 1px solid #cad6cc; border-radius: 14px; background: rgba(255,255,255,.96); color: var(--green); box-shadow: 0 16px 45px rgba(30, 48, 36, .2); text-align: center; transform: translate(-50%, -50%); }
@@ -464,15 +544,37 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .viewer-area.is-searching .pdf-stack { opacity: .48; pointer-events: none; }
 
 @media (max-width: 1180px) {
-  .excel-button, .export-button { width: 42px; padding: 0; font-size: 0; }
+  .export-button { width: 42px; padding: 0; font-size: 0; }
 }
 
 @media (max-width: 720px) {
-  .document-switcher { min-height: 60px; padding: 9px 12px; }
-  .document-switcher select { height: 40px; font-size: 11px; }
-  .document-switcher > span { display: none; }
   .processing-files { max-height: 50vh; }
   .processing-file > span b { font-size: 11px; }
   .processing-file small { font-size: 9px; }
-  .excel-button, .export-button { width: 34px; height: 34px; min-height: 34px; margin-left: 3px; }
+  .export-button { width: 34px; height: 34px; min-height: 34px; margin-left: 3px; }
 }
+
+/* --- Publish result ------------------------------------------------------ */
+.publish-overlay { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center;
+  background: rgba(15, 23, 42, .45); padding: 24px; }
+.publish-card { width: min(680px, 100%); max-height: 82vh; overflow-y: auto; background: #fff;
+  border-radius: 14px; padding: 20px 22px; box-shadow: 0 24px 60px rgba(15, 23, 42, .28); }
+.publish-card header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.publish-card h2 { margin: 0; font-size: 18px; }
+.publish-summary { margin: 0 0 12px; font-size: 14px; }
+.publish-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.publish-list li { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: center;
+  padding: 6px 8px; border-radius: 8px; background: #f8fafc; }
+.publish-keyword { font-weight: 600; }
+.publish-page, .publish-projects { color: #64748b; font-size: 12px; }
+.publish-skipped { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: #fffbeb; font-size: 12.5px; }
+.publish-skipped ul { margin: 6px 0 0; padding-left: 16px; }
+
+/* Per-document sections in the publish result, so a batch of thirty is
+   readable rather than one flat list of a few hundred rows. */
+.publish-document { margin-top: 14px; padding-top: 12px; border-top: 1px solid #eef1ec; }
+.publish-document:first-of-type { border-top: 0; }
+.publish-document h3 { display: flex; flex-direction: column; gap: 2px; margin: 0 0 7px; font-size: 13px; }
+.publish-document h3 small { color: #7b827a; font-size: 11px; font-weight: 500; }
+.publish-document h3 em { color: #b45309; font-style: normal; }
+.publish-note { margin: 7px 0 0; color: #8a6d33; font-size: 11.5px; }
