@@ -119,7 +119,22 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .export-button { padding: 9px 14px; margin-left: 7px; font-size: 12px; }
 
 .left-panel, .right-panel { min-height: 0; background: #fafbf8; display: flex; flex-direction: column; overflow: hidden; z-index: 5; }
-.left-panel { border-right: 1px solid var(--line); }
+/* The whole sidebar scrolls, as one column.
+   It used to be a clipped flex column whose last child, the mentions list, was
+   sized by its own content: with nothing constraining its height the list never
+   reached its own `overflow: auto`, and everything past the panel's height was
+   simply cut off and unreachable. Selecting a lot of keywords made it worse
+   from the other end, because the keyword block grew to about 450px and pushed
+   the mentions out of view before they had a chance to be clipped.
+   One scroller for the column has no such failure: whatever the two sections
+   add up to, all of it can be reached. */
+.left-panel { border-right: 1px solid var(--line); overflow-y: auto; overscroll-behavior: contain; scrollbar-color: #c5cbc3 transparent; }
+/* A flex column that scrolls still lets its children shrink, and these ones can:
+   the keyword cloud and the selected list are scrollable, so their minimum
+   content height is nearly nothing and the browser will happily squash them
+   instead of scrolling. Pinning them to their natural height is what turns the
+   overflow above into an actual scrollbar. */
+.left-panel > * { flex-shrink: 0; }
 .right-panel { border-left: 1px solid var(--line); }
 .panel-section { padding: 18px 16px; border-bottom: 1px solid var(--line); }
 .panel-section > label, .inspector-content > label { display: flex; justify-content: space-between; color: #535a52; font-size: 10px; text-transform: uppercase; font-weight: 700; letter-spacing: .7px; margin-bottom: 9px; }
@@ -156,7 +171,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
    mid-row by design -- a partial chip is itself a cue -- but without this a full
    final row looks like the end of the list when it is not. */
 .keyword-available { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 5px;
-  max-height: 168px; margin-top: 10px; padding: 9px; overflow-y: auto;
+  max-height: min(168px, 24vh); margin-top: 10px; padding: 9px; overflow-y: auto;
   border: 1px solid #dce2da; border-radius: 10px;
   background:
     linear-gradient(#fff 30%, rgba(255,255,255,0)) top / 100% 15px no-repeat local,
@@ -183,7 +198,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .keyword-list-header { min-height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid #e3e7e1; background: #f5f8f4; color: #596457; font-size: 10px; font-weight: 700; }
 .keyword-list-header button { border: 0; background: transparent; color: #54725d; font-size: 10px; font-weight: 700; cursor: pointer; }
 .keyword-list-header button:hover { color: #234d38; text-decoration: underline; }
-.keyword-list ul { max-height: 132px; margin: 0; padding: 0; overflow: auto; list-style: none; }
+.keyword-list ul { max-height: min(132px, 20vh); margin: 0; padding: 0; overflow: auto; list-style: none; }
 .keyword-list li { min-height: 38px; display: flex; align-items: center; gap: 8px; padding: 6px 7px 6px 10px; border-bottom: 1px solid #edf0ec; color: #364238; font-size: 11px; font-weight: 600; }
 .keyword-list li:last-child { border-bottom: 0; }
 .keyword-list li > span { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -199,7 +214,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .tool-button b { font-size: 11px; }
 .tool-button small { font-size: 9px; color: #888e87; margin-top: 2px; }
 .tool-button kbd { border: 1px solid #d2d6d0; border-radius: 4px; background: white; padding: 2px 5px; font-size: 9px; color: #7c837b; }
-.results-heading { display: flex; align-items: center; padding: 14px 16px 7px; text-transform: uppercase; color: #747a73; font-size: 10px; font-weight: 700; letter-spacing: .7px; }
+/* Sticky so the count and the Select button stay reachable while the mentions
+   scroll under them -- otherwise scrolling to a mention means scrolling away
+   from the control that acts on it. */
+.results-heading { position: sticky; top: 0; z-index: 3; background: #fafbf8; box-shadow: 0 1px 0 var(--line); display: flex; align-items: center; padding: 14px 16px 7px; text-transform: uppercase; color: #747a73; font-size: 10px; font-weight: 700; letter-spacing: .7px; }
 .results-heading b { margin-left: auto; min-width: 21px; border-radius: 10px; padding: 2px 6px; color: var(--green); background: var(--green-soft); text-align: center; }
 .selection-mode-button { display: inline-flex; align-items: center; gap: 4px; margin-left: 7px; padding: 4px 6px; border: 1px solid #d7dbd4; border-radius: 5px; background: white; color: #677067; font-size: 9px; font-weight: 700; cursor: pointer; text-transform: none; letter-spacing: 0; }
 .selection-mode-button:hover, .selection-mode-button.active { color: var(--green); background: var(--green-soft); border-color: #bfd1c4; }
@@ -209,6 +227,9 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .bulk-toolbar button:hover:not(:disabled) { background: #d8e6da; }
 .bulk-toolbar button:disabled { color: #a9b8ac; cursor: default; }
 .bulk-toolbar .bulk-delete { display: inline-flex; align-items: center; gap: 3px; color: #a13e3e; }
+/* Scrolling belongs to the panel now, so this must not open a second scroller
+   inside it -- a nested one traps the wheel and strands the rows below it. */
+.left-panel .results-list { flex: none; overflow: visible; }
 .results-list { overflow: auto; padding: 0 8px 20px; scrollbar-color: #c5cbc3 transparent; }
 .empty-results, .empty-inspector { color: #939991; text-align: center; padding: 38px 20px; }
 .empty-results p, .empty-inspector p { color: #545a53; font-size: 12px; font-weight: 600; margin: 8px 0 4px; }
