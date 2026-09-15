@@ -1,21 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowLeft, Check, ChevronDown, FileSearch, Files, Highlighter,
+  ArrowLeft, Check, ChevronDown, Clipboard, Database, Download, FileSearch, Files, Highlighter,
   ListChecks, LoaderCircle, Minus, MousePointer2, OctagonX, Plus, Redo2, RotateCcw, Search,
   SlidersHorizontal, Trash2, Undo2, Upload, UploadCloud, X,
 } from 'lucide-react';
 import {
   cancelDocuments, fetchKeywords, fileUrl, getDocument, getDocumentStatuses, isCancelledRequest,
-  publishDocuments, retryOcr, saveHighlights, searchDocuments as searchDocumentSet, uploadDocuments,
+  getExtractedText, publishDocuments, retryOcr, saveHighlights, searchDocuments as searchDocumentSet, uploadDocuments,
 } from './api';
 import { normalizeSearchText } from './normalize';
-import { PdfViewer } from './PdfViewer';
-import type { BatchPublishReport, DocumentRecord, Highlight, ServerKeyword } from './types';
+import type { BatchPublishReport, DocumentRecord, ExtractedText, Highlight, ServerKeyword } from './types';
 import { useHighlightHistory } from './useHighlightHistory';
+
+const PdfViewer = lazy(() => import('./PdfViewer').then((module) => ({ default: module.PdfViewer })));
 
 /** Matches the server's MAX_BATCH_FILES. More can be added afterwards. */
 const MAX_BATCH_FILES = 30;
-const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+const MAX_FILE_SIZE_BYTES = 250 * 1024 * 1024;
 
 // Four of these share the Latin recognition model and one needs Cyrillic, but
 // that is the server's concern: here they are simply the languages a document
@@ -31,9 +32,8 @@ type OcrLanguage = typeof OCR_LANGUAGES[number]['value'];
 type OcrMode = 'AUTO' | 'FORCE_OCR';
 
 /**
- * What may be uploaded. Office documents and images are converted to PDF on the
- * server, so everything downstream -- the viewer, OCR, highlights, publishing --
- * only ever deals with PDF pages.
+ * What may be uploaded. Images and sampled video frames go directly to OCR;
+ * office formats become PDFs to preserve their document page layout.
  *
  * This list must stay in step with ACCEPTED_EXTENSIONS in the backend's
  * convert.ts; the file picker's filter is derived from it rather than written
@@ -43,6 +43,7 @@ const ACCEPTED_UPLOAD_EXTENSIONS = [
   '.pdf',
   '.doc', '.docx', '.odt', '.rtf', '.xls', '.xlsx', '.ods', '.ppt', '.pptx', '.odp',
   '.jpg', '.jpeg', '.png', '.webp', '.tif', '.tiff', '.bmp', '.gif', '.avif', '.heic', '.heif',
+  '.mp4', '.mov', '.m4v', '.webm', '.mkv', '.avi', '.mpeg', '.mpg', '.3gp',
 ];
 const UPLOAD_ACCEPT_ATTRIBUTE = ACCEPTED_UPLOAD_EXTENSIONS.join(',');
 
@@ -110,7 +111,7 @@ function OcrModeOptions({ mode, onChange, disabled }: {
       <div className="ocr-mode-choices" role="radiogroup" aria-labelledby="mode-label">
         <button type="button" role="radio" aria-checked={mode === 'AUTO'} disabled={disabled} onClick={() => onChange('AUTO')} className={`ocr-mode-choice ${mode === 'AUTO' ? 'selected' : ''}`}>
           <span className="mode-choice-mark"><Check size={12} strokeWidth={3} /></span>
-          <span><b>Automatic</b><small>Fast · uses PDF text when reliable</small></span>
+          <span><b>Automatic</b><small>Uses reliable document text · OCRs visual media</small></span>
         </button>
         <button type="button" role="radio" aria-checked={mode === 'FORCE_OCR'} disabled={disabled} onClick={() => onChange('FORCE_OCR')} className={`ocr-mode-choice ${mode === 'FORCE_OCR' ? 'selected' : ''}`}>
           <span className="mode-choice-mark"><Check size={12} strokeWidth={3} /></span>
@@ -152,12 +153,12 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
     }
     const oversized = files.find((file) => file.size > MAX_FILE_SIZE_BYTES);
     if (oversized) {
-      showUploadAlert('File is too large', `“${oversized.name}” is ${formatBytes(oversized.size)}. The limit is 50 MB per file.`);
+      showUploadAlert('File is too large', `“${oversized.name}” is ${formatBytes(oversized.size)}. The limit is 250 MB per file.`);
       return;
     }
     const unsupported = files.filter((file) => !ACCEPTED_UPLOAD_EXTENSIONS.some((extension) => file.name.toLowerCase().endsWith(extension)));
     if (unsupported.length) {
-      showUploadAlert('Unsupported file type', `“${unsupported[0]!.name}” is not supported. Upload a PDF, an image, or a Word, Excel, PowerPoint or OpenDocument file.`);
+      showUploadAlert('Unsupported file type', `“${unsupported[0]!.name}” is not supported. Upload a video, PDF, image, Word, Excel, PowerPoint or OpenDocument file.`);
       return;
     }
     const controller = new AbortController();
@@ -199,9 +200,9 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
       </header>
       <div className="welcome-body">
       <section className="welcome-copy">
-        <span className="eyebrow"><span /> OCR document search</span>
-        <h1>Search every Journal.<br /><em>Find every mention.</em></h1>
-        <p>Upload one newspaper issue, pick the keywords to track, review the mentions, then publish the results.</p>
+        <span className="eyebrow"><span /> Media monitoring</span>
+        <h1>Search every publication.<br /><em>Find every mention.</em></h1>
+        <p>Upload media, use the prepared keywords from Neurotime, review each match, then choose whether to publish it.</p>
       </section>
       <section
         className={`upload-card ${dragging ? 'dragging' : ''}`}
@@ -230,7 +231,7 @@ function UploadScreen({ onUploaded }: { onUploaded: (documents: DocumentRecord[]
             </button>
           )}
         </div>
-        <div className="upload-meta"><span>1–30 files</span><i /> <span>50 MB each</span><i /> <span>AZ + EN + RU + UZ + TR</span></div>
+        <div className="upload-meta"><span>1–30 files</span><i /> <span>250 MB each</span><i /> <span>Documents · images · video</span></div>
         {notice && <div className="inline-notice">{notice}</div>}
       </section>
       </div>
@@ -259,7 +260,7 @@ function AddDocumentsDialog({ onUploaded, onClose }: {
     }
     const unsupported = files.filter((file) => !ACCEPTED_UPLOAD_EXTENSIONS.some((extension) => file.name.toLowerCase().endsWith(extension)));
     if (unsupported.length) {
-      setError(`Unsupported file type: ${unsupported[0]!.name}. Accepted: PDF, images, Word, Excel, PowerPoint and OpenDocument.`);
+      setError(`Unsupported file type: ${unsupported[0]!.name}. Accepted: videos, PDFs, images, Word, Excel, PowerPoint and OpenDocument.`);
       return;
     }
     if (files.length > MAX_BATCH_FILES) {
@@ -334,7 +335,7 @@ function ProcessingScreen({ documents, stopping, onRetry, onDiscard, onUploaded 
     <div className="processing-screen">
       <div className="brand-mark"><FileSearch size={22} /></div>
       {allFailed ? <X className="status-icon failed" size={38} /> : <LoaderCircle className="status-icon spin" size={38} />}
-      <h1>{allFailed ? 'OCR could not finish' : `Reading ${documents.length} PDF${documents.length === 1 ? '' : 's'}`}</h1>
+      <h1>{allFailed ? 'OCR could not finish' : `Reading ${documents.length} file${documents.length === 1 ? '' : 's'}`}</h1>
       <p>{finished} of {documents.length} finished{readPages ? ` · ${readPages} page${readPages === 1 ? '' : 's'} read` : ''}</p>
       <div className="batch-progress"><i style={{ width: `${percent}%` }} /></div>
       <div className="processing-files">
@@ -348,10 +349,10 @@ function ProcessingScreen({ documents, stopping, onRetry, onDiscard, onUploaded 
               )}
             </span>
             <small className={document.ocrStatus.toLowerCase()}>
-              {document.ocrStatus === 'COMPLETE' ? `${document.pageCount ?? 0} pages`
+              {document.ocrStatus === 'COMPLETE' ? `${document.pageCount ?? 0} ${document.mediaKind === 'video' ? 'frames' : 'pages'}`
                 : document.ocrStatus === 'FAILED' ? 'Failed'
                   : document.ocrStatus === 'PROCESSING' ? document.ocrProgress?.totalPages
-                    ? `${document.ocrProgress.currentPage} / ${document.ocrProgress.totalPages} pages`
+                    ? `${document.ocrProgress.currentPage} / ${document.ocrProgress.totalPages} ${document.mediaKind === 'video' ? 'frames' : 'pages'}`
                     : 'Preparing'
                     : document.ocrProgress?.queuePosition
                       ? `Queued · #${document.ocrProgress.queuePosition}`
@@ -385,7 +386,7 @@ function ProcessingScreen({ documents, stopping, onRetry, onDiscard, onUploaded 
   );
 }
 
-export function App() {
+function MonitoringApp() {
   const [documents, setDocuments] = useState<DocumentRecord[]>([]);
   const [activeDocumentId, setActiveDocumentId] = useState('');
   const [restoring, setRestoring] = useState(true);
@@ -843,7 +844,7 @@ export function App() {
           <p className="publish-summary">
             <b>{publishReport.images}</b> image{publishReport.images === 1 ? '' : 's'} created,
             {' '}<b>{publishReport.rows}</b> media result{publishReport.rows === 1 ? '' : 's'} recorded
-            {' '}across <b>{publishReport.documents.length}</b> PDF{publishReport.documents.length === 1 ? '' : 's'}.
+            {' '}across <b>{publishReport.documents.length}</b> file{publishReport.documents.length === 1 ? '' : 's'}.
           </p>
 
           {publishReport.documents.map((item) => <section className="publish-document" key={item.documentId}>
@@ -865,7 +866,7 @@ export function App() {
           </section>)}
 
           {publishReport.skippedDocuments.length > 0 && <div className="publish-skipped">
-            <b>Nothing published from {publishReport.skippedDocuments.length} PDF{publishReport.skippedDocuments.length === 1 ? '' : 's'}</b>
+            <b>Nothing published from {publishReport.skippedDocuments.length} file{publishReport.skippedDocuments.length === 1 ? '' : 's'}</b>
             <ul>{publishReport.skippedDocuments.map((item) => <li key={item.documentId}>
               {item.originalName} — {item.reason}
             </li>)}</ul>
@@ -919,10 +920,10 @@ export function App() {
           </div>}
           <div className="keyword-actions"><button className="find-button" onClick={() => void runSearch()} disabled={searching || !keywords.length}>{searching ? <LoaderCircle className="spin" size={17} /> : <Search size={17} />}{searching ? ' Searching…' : ` Search ${keywords.length} keyword${keywords.length === 1 ? '' : 's'}`}</button></div>
         </div>
-        <div className="panel-section tool-section"><button className={`tool-button ${manualMode ? 'active' : ''}`} onClick={() => setManualMode((value) => !value)}><MousePointer2 size={20} /><span><b>Draw highlight</b><small>Current PDF</small></span><kbd>H</kbd></button></div>
+        <div className="panel-section tool-section"><button className={`tool-button ${manualMode ? 'active' : ''}`} onClick={() => setManualMode((value) => !value)}><MousePointer2 size={20} /><span><b>Draw highlight</b><small>Current file</small></span><kbd>H</kbd></button></div>
         <div className="results-heading"><span>Mentions</span><b>{allHighlightsCount}</b><button className={`selection-mode-button ${selectionMode ? 'active' : ''}`} onClick={() => { setSelectionMode((value) => !value); setSelectedIds([]); setManualMode(false); }}><ListChecks size={15} /> {selectionMode ? 'Done' : 'Select'}</button></div>
         {selectionMode && <div className="bulk-toolbar">
-          <span>{selectedIds.length ? `${selectedIds.length} selected` : `${allHighlightIds.length} across ${documents.length} PDF${documents.length === 1 ? '' : 's'}`}</span>
+          <span>{selectedIds.length ? `${selectedIds.length} selected` : `${allHighlightIds.length} across ${documents.length} file${documents.length === 1 ? '' : 's'}`}</span>
           <button onClick={toggleSelectAll} disabled={!allHighlightIds.length}>{allSelected ? 'Deselect all' : 'Select all'}</button>
           <button className="bulk-delete" onClick={removeSelectedHighlights} disabled={!selectedIds.length}><Trash2 size={13} /> Delete</button>
         </div>}
@@ -941,7 +942,7 @@ export function App() {
                   onClick={() => toggleDocumentCollapsed(group.document.id)}
                   aria-expanded={!documentCollapsed}
                   aria-label={documentCollapsed ? `Expand ${group.document.originalName}` : `Collapse ${group.document.originalName}`}
-                  title={documentCollapsed ? 'Expand this PDF' : 'Collapse this PDF'}
+                  title={documentCollapsed ? 'Expand this file' : 'Collapse this file'}
                 ><ChevronDown size={15} /></button>
                 <button className="group-label" onClick={() => switchDocument(group.document.id)} title={group.document.originalName}>
                   <FileSearch size={15} /><span>{group.document.originalName}</span>
@@ -973,7 +974,7 @@ export function App() {
 
       <main className={`viewer-area ${searching ? 'is-searching' : ''}`} onClick={() => setSelectedIds([])} aria-busy={searching}>
         <div className="viewer-toolbar"><button className={`mode-pill ${!manualMode ? 'active' : ''}`} onClick={(event) => { event.stopPropagation(); setManualMode(false); }}><MousePointer2 size={16} /> Select</button><button className={`mode-pill ${manualMode ? 'active' : ''}`} onClick={(event) => { event.stopPropagation(); setManualMode(true); }}><Highlighter size={16} /> Highlight</button><span className="toolbar-rule" /><button className="zoom-button" onClick={() => setZoom((value) => Math.max(0.5, value - 0.1))}><Minus size={17} /></button><span className="zoom-value">{Math.round(zoom * 100)}%</span><button className="zoom-button" onClick={() => setZoom((value) => Math.min(1.7, value + 0.1))}><Plus size={17} /></button></div>
-        <PdfViewer url={fileUrl(document.id)} highlights={history.highlights} selectedIds={selectedIds} selectionMode={selectionMode} manualMode={manualMode} zoom={zoom} onSelect={(id) => id && focusHighlight(document.id, id, selectionMode)} onAdd={(highlight) => { commit((current) => [...current, highlight]); setSelectedIds([highlight.id]); setManualMode(false); setInspectorOpen(true); }} onUpdate={updateHighlight} />
+        <Suspense fallback={<div className="search-overlay"><LoaderCircle className="spin" size={28} /><b>Opening viewer</b></div>}><PdfViewer url={fileUrl(document.id)} highlights={history.highlights} selectedIds={selectedIds} selectionMode={selectionMode} manualMode={manualMode} zoom={zoom} onSelect={(id) => id && focusHighlight(document.id, id, selectionMode)} onAdd={(highlight) => { commit((current) => [...current, highlight]); setSelectedIds([highlight.id]); setManualMode(false); setInspectorOpen(true); }} onUpdate={updateHighlight} /></Suspense>
         {searching && <div className="search-overlay" role="status"><LoaderCircle className="spin" size={28} /><b>Searching {readyDocuments.length} documents</b><span>Finding every matching mention…</span></div>}
       </main>
 
@@ -990,9 +991,204 @@ export function App() {
           <label htmlFor="opacity">Opacity <span>{Math.round(selected.opacity * 100)}%</span></label><input id="opacity" className="range" type="range" min="0.1" max="0.8" step="0.05" value={selected.opacity} onChange={(event) => updateHighlight(selected.id, { opacity: Number(event.target.value) })} />
           <label htmlFor="note">Note</label><textarea id="note" className="note-input" placeholder="Optional note" value={selected.note ?? ''} onChange={(event) => updateHighlight(selected.id, { note: event.target.value })} /><button className="delete-button" onClick={() => removeHighlight(document.id, selected.id)}><Trash2 size={16} /> Remove highlight</button>
         </div> : <div className="empty-inspector"><MousePointer2 size={28} /><p>Select a highlight</p></div>}
-        <div className="document-stats"><h3>Current PDF</h3><div><span>Automatic</span><b>{autoCount}</b></div><div><span>Manual</span><b>{manualCount}</b></div><div><span>Pages marked</span><b>{pagesWithHighlights} / {document.pageCount}</b></div><div><span>File size</span><b>{formatBytes(document.size)}</b></div><button className="rerun-ocr-button" onClick={() => void reprocessActiveDocument()} disabled={reprocessing}><RotateCcw size={15} /> {reprocessing ? 'Starting…' : 'Re-run OCR'}</button></div>
+        <div className="document-stats"><h3>Current file</h3><div><span>Automatic</span><b>{autoCount}</b></div><div><span>Manual</span><b>{manualCount}</b></div><div><span>{document.mediaKind === 'video' ? 'Frames marked' : 'Pages marked'}</span><b>{pagesWithHighlights} / {document.pageCount}</b></div><div><span>File size</span><b>{formatBytes(document.size)}</b></div><button className="rerun-ocr-button" onClick={() => void reprocessActiveDocument()} disabled={reprocessing}><RotateCcw size={15} /> {reprocessing ? 'Starting…' : 'Re-run OCR'}</button></div>
       </aside>
       {notice && <button className="toast" onClick={() => setNotice('')}>{notice}<X size={15} /></button>}
     </div>
   );
+}
+
+type WorkspaceMode = 'monitor' | 'extract';
+
+const formatTimestamp = (seconds: number) => {
+  const whole = Math.max(0, Math.round(seconds));
+  const hours = Math.floor(whole / 3600);
+  const minutes = Math.floor((whole % 3600) / 60);
+  const remainder = whole % 60;
+  return hours
+    ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`
+    : `${minutes}:${String(remainder).padStart(2, '0')}`;
+};
+
+function ExtractApp() {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+  const [results, setResults] = useState<Record<string, ExtractedText>>({});
+  const [activeId, setActiveId] = useState('');
+  const [languages, setLanguages] = useState<OcrLanguage[]>(['aze', 'eng']);
+  const [ocrMode, setOcrMode] = useState<OcrMode>('AUTO');
+  const [dragging, setDragging] = useState(false);
+  const [uploadMsById, setUploadMsById] = useState<Record<string, number>>(() => {
+    try { return JSON.parse(localStorage.getItem('markwise.extractUploadMs') ?? '{}') as Record<string, number>; }
+    catch { return {}; }
+  });
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<{ loaded: number; total: number } | null>(null);
+  const [notice, setNotice] = useState('');
+  const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
+
+  const hasActiveWork = uploading || documents.some((document) => ['PENDING', 'PROCESSING'].includes(document.ocrStatus));
+  useEffect(() => {
+    if (!hasActiveWork) return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [hasActiveWork]);
+
+  useEffect(() => {
+    let ids: string[] = [];
+    try {
+      const value = JSON.parse(localStorage.getItem('markwise.extractDocumentIds') ?? '[]') as unknown;
+      if (Array.isArray(value)) ids = value.filter((item): item is string => typeof item === 'string');
+    } catch { /* Ignore damaged browser state. */ }
+    if (!ids.length) return;
+    getDocumentStatuses(ids).then((items) => {
+      setDocuments(items.map((item) => ({ ...item, pages: [] })));
+      setActiveId(items[0]?.id ?? '');
+    }).catch(() => localStorage.removeItem('markwise.extractDocumentIds'));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('markwise.extractDocumentIds', JSON.stringify(documents.map((document) => document.id)));
+  }, [documents.map((document) => document.id).join('|')]);
+
+  useEffect(() => {
+    localStorage.setItem('markwise.extractUploadMs', JSON.stringify(uploadMsById));
+  }, [uploadMsById]);
+
+  useEffect(() => {
+    const pending = documents.some((document) => ['PENDING', 'PROCESSING'].includes(document.ocrStatus));
+    if (!pending) return;
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const statuses = await getDocumentStatuses(documents.map((document) => document.id));
+        if (!cancelled) {
+          const byId = new Map(statuses.map((status) => [status.id, status]));
+          setDocuments((current) => current.map((document) => ({ ...document, ...(byId.get(document.id) ?? {}) })));
+        }
+      } catch (error) {
+        if (!cancelled) setNotice(errorMessage(error));
+      }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 1800);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [documents.map((document) => `${document.id}:${document.ocrStatus}`).join('|')]);
+
+  useEffect(() => {
+    const ready = documents.filter((document) => ['COMPLETE', 'FAILED'].includes(document.ocrStatus) && !results[document.id]);
+    if (!ready.length) return;
+    let cancelled = false;
+    Promise.all(ready.map((document) => getExtractedText(document.id)))
+      .then((items) => {
+        if (!cancelled) setResults((current) => Object.fromEntries([...Object.entries(current), ...items.map((item) => [item.documentId, item])]));
+      })
+      .catch((error) => !cancelled && setNotice(errorMessage(error)));
+    return () => { cancelled = true; };
+  }, [documents.map((document) => `${document.id}:${document.ocrStatus}`).join('|'), Object.keys(results).join('|')]);
+
+  const upload = async (selected?: FileList | File[] | null) => {
+    const files = Array.from(selected ?? []);
+    if (!files.length) return;
+    if (files.length > MAX_BATCH_FILES) { setNotice(`Upload no more than ${MAX_BATCH_FILES} files at once.`); return; }
+    const unsupported = files.find((file) => !ACCEPTED_UPLOAD_EXTENSIONS.some((extension) => file.name.toLowerCase().endsWith(extension)));
+    const oversized = files.find((file) => file.size > MAX_FILE_SIZE_BYTES);
+    if (unsupported) { setNotice(`${unsupported.name} is not a supported file type.`); return; }
+    if (oversized) { setNotice(`${oversized.name} is larger than 250 MB.`); return; }
+    setUploading(true);
+    const batchStartedAt = Date.now();
+    setUploadStartedAt(batchStartedAt);
+    setNotice('');
+    setProgress({ loaded: 0, total: files.reduce((sum, file) => sum + file.size, 0) });
+    try {
+      const created = await uploadDocuments(files, languages, ocrMode, (loaded, total) => setProgress({ loaded, total }));
+      const uploadMs = Date.now() - batchStartedAt;
+      setUploadMsById((current) => ({ ...current, ...Object.fromEntries(created.map((item) => [item.id, uploadMs])) }));
+      setDocuments((current) => [...current, ...created.map((item) => ({ ...item, pages: [], highlights: [] }))]);
+      setActiveId((current) => current || created[0]?.id || '');
+    } catch (error) {
+      setNotice(errorMessage(error));
+    } finally {
+      setUploading(false);
+      setUploadStartedAt(null);
+      setProgress(null);
+      if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const remove = async (id: string) => {
+    try { await cancelDocuments([id]); } catch { /* The workspace may already have expired. */ }
+    setDocuments((current) => current.filter((document) => document.id !== id));
+    setResults((current) => { const next = { ...current }; delete next[id]; return next; });
+    setUploadMsById((current) => { const next = { ...current }; delete next[id]; return next; });
+    setActiveId((current) => current === id ? documents.find((document) => document.id !== id)?.id ?? '' : current);
+  };
+
+  const active = documents.find((document) => document.id === activeId) ?? documents[0];
+  const result = active ? results[active.id] : undefined;
+  const saveText = () => {
+    if (!result) return;
+    const link = window.document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([result.text], { type: 'text/plain;charset=utf-8' }));
+    link.download = `${result.originalName.replace(/\.[^.]+$/, '') || 'extracted-text'}.txt`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  return <div className="extract-shell">
+    <aside className="extract-sidebar">
+      <div className="extract-intro"><span className="eyebrow"><span /> Text extraction</span><h1>Extract every word.</h1><p>Images, videos, PDFs and office files. Nothing is published to the monitoring database.</p></div>
+      <LanguageOptions languages={languages} onChange={setLanguages} disabled={uploading} />
+      <OcrModeOptions mode={ocrMode} onChange={setOcrMode} disabled={uploading} />
+      <input ref={inputRef} hidden type="file" multiple accept={UPLOAD_ACCEPT_ATTRIBUTE} onChange={(event) => void upload(event.target.files)} />
+      <div className={`extract-dropzone ${dragging ? 'dragging' : ''}`}
+        onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(event) => { event.preventDefault(); setDragging(false); void upload(event.dataTransfer.files); }}>
+        <UploadCloud size={21} />
+        <span><b>Drop files here</b><small>or choose up to 30 files</small></span>
+        <button className="primary-button extract-upload" onClick={() => inputRef.current?.click()} disabled={uploading}>
+          {uploading ? <LoaderCircle className="spin" size={18} /> : <Files size={18} />}
+          {uploading && progress?.total
+            ? `Uploading ${Math.round(progress.loaded / progress.total * 100)}% · ${formatTimestamp((now - (uploadStartedAt ?? now)) / 1000)}`
+            : 'Choose files'}
+        </button>
+      </div>
+      <div className="extract-files">
+        {documents.map((document) => <button key={document.id} className={`extract-file ${active?.id === document.id ? 'active' : ''}`} onClick={() => setActiveId(document.id)}>
+          <FileSearch size={16} /><span><b>{document.originalName}</b><small>{document.ocrStatus === 'COMPLETE' ? `${document.pageCount ?? 0} ${document.mediaKind === 'video' ? 'frames' : 'pages'} · ${formatTimestamp(((results[document.id]?.durationMs ?? Math.max(0, now - new Date(document.createdAt).getTime())) + (uploadMsById[document.id] ?? 0)) / 1000)}` : document.ocrStatus === 'FAILED' ? `Finished with errors · ${formatTimestamp(((results[document.id]?.durationMs ?? Math.max(0, now - new Date(document.createdAt).getTime())) + (uploadMsById[document.id] ?? 0)) / 1000)}` : `${document.ocrStatus === 'PROCESSING' ? 'Reading' : 'Queued'} · ${formatTimestamp((Math.max(0, now - new Date(document.createdAt).getTime()) + (uploadMsById[document.id] ?? 0)) / 1000)}`}</small></span>
+          <X size={15} onClick={(event) => { event.stopPropagation(); void remove(document.id); }} />
+        </button>)}
+      </div>
+    </aside>
+    <main className="extract-result">
+      {!active && <div className="extract-empty"><FileSearch size={36} /><h2>Upload something to read</h2><p>Video uses one frame per second. Repeated on-screen lines are returned once.</p></div>}
+      {active && !result && <div className="extract-empty"><LoaderCircle className="spin" size={36} /><h2>Reading {active.originalName}</h2><strong className="extract-timer">{formatTimestamp((Math.max(0, now - new Date(active.createdAt).getTime()) + (uploadMsById[active.id] ?? 0)) / 1000)}</strong><p>{active.mediaKind === 'video' ? 'Reading one image frame per second…' : active.mediaKind === 'image' ? 'Reading the image pixels directly…' : 'Reading document text and scanned pages…'}</p></div>}
+      {active && result && <>
+        <header className="extract-result-header"><span><small>{result.mediaKind}</small><h2>{result.originalName}</h2><p>{result.text.split(/\s+/).filter(Boolean).length} words · {result.segments.length} {result.mediaKind === 'video' ? 'one-second frames' : 'pages'} · upload-to-text {formatTimestamp((result.durationMs + (uploadMsById[result.documentId] ?? 0)) / 1000)}{result.failedPages ? ` · ${result.failedPages} failed` : ''}</p></span><div><button onClick={() => void navigator.clipboard.writeText(result.text)}><Clipboard size={16} /> Copy</button><button onClick={saveText}><Download size={16} /> Download .txt</button></div></header>
+        <article className="extract-text">
+          {result.segments.filter((segment) => segment.text).map((segment) => <section key={segment.pageNumber}><h3>{result.mediaKind === 'video' && segment.timestampSeconds !== null ? `Frame at ${formatTimestamp(segment.timestampSeconds)}` : `Page ${segment.pageNumber}`}</h3><pre>{segment.text}</pre></section>)}
+          {!result.text && <p>No readable text was found in this file.</p>}
+        </article>
+      </>}
+      {notice && <button className="toast" onClick={() => setNotice('')}>{notice}<X size={15} /></button>}
+    </main>
+  </div>;
+}
+
+export function App() {
+  const [mode, setMode] = useState<WorkspaceMode>(() => localStorage.getItem('markwise.mode') === 'extract' ? 'extract' : 'monitor');
+  const changeMode = (next: WorkspaceMode) => { localStorage.setItem('markwise.mode', next); setMode(next); };
+  return <div className="product-shell">
+    <header className="product-modebar">
+      <div className="mode-brand"><Highlighter size={18} /><b>Markwise OCR</b><small>shared text intelligence service</small></div>
+      <nav aria-label="OCR workflow">
+        <button className={mode === 'monitor' ? 'active' : ''} onClick={() => changeMode('monitor')}><Database size={16} /> Media monitoring</button>
+        <button className={mode === 'extract' ? 'active' : ''} onClick={() => changeMode('extract')}><FileSearch size={16} /> Extract text</button>
+      </nav>
+    </header>
+    <div className="product-main">{mode === 'monitor' ? <MonitoringApp /> : <ExtractApp />}</div>
+  </div>;
 }

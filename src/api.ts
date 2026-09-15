@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { BatchPublishReport, DocumentRecord, Highlight, ServerKeyword, WorkspaceDocument } from './types';
+import type { BatchPublishReport, DocumentRecord, ExtractedText, Highlight, ServerKeyword, WorkspaceDocument } from './types';
 
 const baseURL = (import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api').replace(/\/+$/, '');
 
@@ -42,6 +42,10 @@ export const isCancelledRequest = (error: unknown) => axios.isCancel(error);
 
 export async function getDocument(documentId: string) {
   return (await api.get<DocumentRecord>(`/documents/${documentId}`)).data;
+}
+
+export async function getExtractedText(documentId: string) {
+  return (await api.get<ExtractedText>(`/documents/${documentId}/text`)).data;
 }
 
 export async function getDocumentStatuses(ids: string[]) {

@@ -40,6 +40,9 @@ export type Highlight = {
 export type DocumentRecord = {
   id: string;
   originalName: string;
+  mimeType: string;
+  mediaKind: 'document' | 'image' | 'video';
+  frameIntervalSeconds?: number | null;
   size: number;
   pageCount?: number | null;
   ocrStatus: OcrStatus;
@@ -50,6 +53,17 @@ export type DocumentRecord = {
   createdAt: string;
   pages: OcrPage[];
   highlights: Highlight[];
+};
+
+export type ExtractedText = {
+  documentId: string;
+  originalName: string;
+  mediaKind: 'document' | 'image' | 'video';
+  status: OcrStatus;
+  durationMs: number;
+  text: string;
+  segments: Array<{ pageNumber: number; timestampSeconds: number | null; text: string }>;
+  failedPages: number;
 };
 
 export type DocumentSummary = Omit<DocumentRecord, 'pages' | 'highlights'>;

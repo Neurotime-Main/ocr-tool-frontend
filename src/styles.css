@@ -599,3 +599,67 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-
 .publish-document h3 small { color: #7b827a; font-size: 11px; font-weight: 500; }
 .publish-document h3 em { color: #b45309; font-style: normal; }
 .publish-note { margin: 7px 0 0; color: #8a6d33; font-size: 11.5px; }
+
+/* --- Product workflows -------------------------------------------------- */
+.product-shell { height: 100vh; display: grid; grid-template-rows: 54px minmax(0, 1fr); overflow: hidden; background: #f4f6f1; }
+.product-main { min-height: 0; overflow: hidden; }
+.product-main .app-shell { height: 100%; }
+.product-main .welcome-shell, .product-main .processing-screen { min-height: 100%; height: 100%; }
+.product-modebar { z-index: 80; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 20px; border-bottom: 1px solid var(--line); background: #fbfcfa; }
+.mode-brand { display: flex; align-items: center; gap: 8px; color: var(--green); }
+.mode-brand b { color: #26372c; font-size: 13px; }
+.mode-brand small { margin-left: 3px; color: #8a9188; font-size: 10px; }
+.product-modebar nav { display: flex; align-items: center; gap: 5px; padding: 4px; border: 1px solid #dce2da; border-radius: 11px; background: #f2f5f1; }
+.product-modebar nav button { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border: 0; border-radius: 8px; background: transparent; color: #687168; font-size: 11px; font-weight: 700; cursor: pointer; }
+.product-modebar nav button.active { background: #fff; color: var(--green); box-shadow: 0 2px 7px rgba(38, 55, 44, .1); }
+
+/* --- Extract workspace -------------------------------------------------- */
+.extract-shell { height: 100%; display: grid; grid-template-columns: 330px minmax(0, 1fr); overflow: hidden; background: #eef1ec; }
+.extract-sidebar { min-height: 0; display: flex; flex-direction: column; gap: 16px; padding: 24px 20px; overflow-y: auto; border-right: 1px solid var(--line); background: #fafbf8; }
+.extract-intro h1 { margin: 7px 0 6px; font-family: 'DM Serif Display', serif; font-size: 30px; font-weight: 400; }
+.extract-intro p { margin: 0; color: #7c847b; font-size: 11px; line-height: 1.5; }
+.extract-sidebar .upload-option-group { padding: 12px; }
+.extract-upload { width: 100%; min-height: 43px; }
+.extract-dropzone { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px; padding: 12px; border: 1.5px dashed #bdcbbf; border-radius: 13px; background: #f7faf6; color: var(--green); transition: .15s; }
+.extract-dropzone.dragging { border-color: var(--green); background: #eaf4ec; box-shadow: 0 0 0 3px rgba(36, 86, 63, .08); }
+.extract-dropzone > span { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.extract-dropzone > span b { color: #405046; font-size: 11px; }
+.extract-dropzone > span small { color: #879087; font-size: 9px; }
+.extract-dropzone .extract-upload { grid-column: 1 / -1; }
+.extract-files { display: grid; gap: 7px; }
+.extract-file { display: flex; align-items: center; gap: 9px; width: 100%; min-width: 0; padding: 9px 8px; border: 1px solid #e0e5de; border-radius: 10px; background: #fff; color: #647066; text-align: left; cursor: pointer; }
+.extract-file:hover, .extract-file.active { border-color: #a9c1ae; background: #edf5ef; color: var(--green); }
+.extract-file > span { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.extract-file b { overflow: hidden; color: #354038; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.extract-file small { color: #858d84; font-size: 9px; }
+.extract-file > svg:last-child { flex: none; color: #a5aaa4; }
+.extract-file > svg:last-child:hover { color: #a43d3d; }
+.extract-result { position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: #f4f6f1; }
+.extract-empty { height: 100%; display: grid; place-content: center; justify-items: center; padding: 30px; color: #809087; text-align: center; }
+.extract-empty h2 { margin: 13px 0 5px; color: #344139; font-size: 20px; }
+.extract-empty p { max-width: 430px; margin: 0; color: #838b82; font-size: 12px; line-height: 1.55; }
+.extract-timer { margin: 0 0 12px; color: var(--green); font-size: 26px; font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+.extract-result-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px 24px; border-bottom: 1px solid var(--line); background: #fff; }
+.extract-result-header > span { min-width: 0; }
+.extract-result-header small { color: var(--green); font-size: 9px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
+.extract-result-header h2 { overflow: hidden; margin: 2px 0; font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+.extract-result-header p { margin: 0; color: #848b83; font-size: 10px; }
+.extract-result-header > div { display: flex; gap: 7px; }
+.extract-result-header button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border: 1px solid #cfd8d0; border-radius: 8px; background: #f8faf7; color: #415447; font-size: 10px; font-weight: 700; cursor: pointer; }
+.extract-result-header button:hover { border-color: #9db1a1; background: #edf4ee; color: var(--green); }
+.extract-text { flex: 1; overflow: auto; padding: 26px clamp(24px, 5vw, 72px) 60px; }
+.extract-text section { max-width: 900px; margin: 0 auto 18px; overflow: hidden; border: 1px solid #dfe5dd; border-radius: 12px; background: #fff; box-shadow: 0 4px 16px rgba(42, 55, 45, .04); }
+.extract-text h3 { margin: 0; padding: 8px 13px; border-bottom: 1px solid #e7ebe5; background: #f8faf7; color: #6a776d; font-size: 10px; }
+.extract-text pre { margin: 0; padding: 16px; color: #2e3931; font-family: 'DM Sans', sans-serif; font-size: 13px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
+
+@media (max-width: 760px) {
+  .mode-brand small { display: none; }
+  .product-modebar { padding: 0 10px; }
+  .product-modebar nav button { padding: 7px 8px; font-size: 0; }
+  .product-modebar nav button svg { width: 18px; height: 18px; }
+  .extract-shell { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+  .extract-sidebar { max-height: 43vh; border-right: 0; border-bottom: 1px solid var(--line); }
+  .extract-result-header { align-items: flex-start; padding: 14px; }
+  .extract-result-header > div { flex-direction: column; }
+  .extract-text { padding: 15px; }
+}

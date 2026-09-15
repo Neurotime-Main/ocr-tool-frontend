@@ -1,8 +1,8 @@
 # Markwise web
 
-Standalone React + Vite frontend for the Markwise OCR highlighter. This repository contains no backend, database credentials, or AWS credentials.
+Standalone React + Vite frontend for Markwise OCR. It has two workflows: Media monitoring reads prepared Neurotime keywords, finds and reviews mentions, and publishes approved results; Extract text accepts documents, images, and videos and returns plain text without writing monitoring records.
 
-The upload screen accepts one or up to 30 PDFs. The workspace searches all completed documents together, groups mentions by PDF and page, jumps directly to a selected highlight, and exports an Excel findings report in addition to highlighted PDFs. Azerbaijani, English, Russian, mixed-language OCR, and force-OCR for complex layouts are supported.
+The upload screen accepts one or up to 30 PDFs, office files, images, or videos. Images are read directly, videos are read as one image per second, PDFs use reliable embedded text or page OCR, and office files preserve their layout as PDF pages. The monitoring workspace searches completed files together, groups mentions by file and page, and writes results only after Publish is confirmed. The extraction workspace offers copyable and downloadable text without monitoring database writes; its timer measures upload-to-text duration and video output is organized by timestamp. Azerbaijani, English, Russian, Uzbek, Turkish, mixed-language OCR, and force-OCR for complex layouts are supported.
 
 ## Local development
 
